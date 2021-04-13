@@ -20,6 +20,6 @@ void * virtual_realloc(void * heapstart, void * ptr, uint32_t size) {
     return NULL;
 }
 
-void detail_print(void * heapstart) {
+void virtual_info(void * heapstart) {
     // Your code here
 }
