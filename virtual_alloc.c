@@ -3,9 +3,10 @@
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
-    virtual_sbrk((1 << initial_size) + sizeof(block_t) + 2);
+    uint8_t* prog_break = (uint8_t*) virtual_sbrk(
+            (1 << initial_size) + sizeof(block_t) + 2);
 
-    uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
+    prog_break += 1 << initial_size;
 
     *(block_t*) prog_break = (block_t) {false, initial_size};
     prog_break += sizeof(block_t);
@@ -96,7 +97,6 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 void virtual_info(void* heapstart) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
-    printf("%d\n", heap_size);
 
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
