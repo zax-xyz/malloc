@@ -35,6 +35,7 @@ uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
+    printf("%d\n", size);
     if (size == 0)
         return NULL;
 
@@ -59,7 +60,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
 
     uint8_t* block_ptr = heapstart;
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
-        if (block->size == lowest_size) {
+        if (!block->allocated && block->size == lowest_size) {
             if (diff) {
                 memmove(block + 1 + diff,
                         block + 1,
