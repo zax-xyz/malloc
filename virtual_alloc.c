@@ -94,10 +94,6 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 void virtual_info(void* heapstart) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
-    printf("%d\n", heap_size);
-
-    printf("%p %p\n", (uint8_t*) heapstart + (1 << heap_size), prog_break - 2);
-    printf("%d\n", (uint8_t*) heapstart + (1 << heap_size) < prog_break - 2);
 
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
