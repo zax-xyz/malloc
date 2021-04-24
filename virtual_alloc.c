@@ -1,4 +1,5 @@
 #include "virtual_alloc.h"
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -49,9 +50,9 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     if (size == 0)
         return NULL;
     
-    void* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = * (uint8_t*) (prog_break - 2);
-    uint8_t min_size = * (uint8_t*) (prog_break - 1);
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = *(prog_break - 2);
+    uint8_t min_size = *(prog_break - 1);
 
     if (size > 1 << heap_size)
         return NULL;
@@ -69,13 +70,13 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
         virtual_sbrk(sizeof(heap_block) * diff);
 
     uint8_t* block_ptr = heapstart;
-    for (heap_block* block = blocks; (void*) block < prog_break; block++) {
+    for (heap_block* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block->size == lowest_size) {
             if (diff) {
                 memmove(
                     block + 1,
                     block + 1 + diff,
-                    (uint8_t*) prog_break - (uint8_t*) block
+                    prog_break - (uint8_t*) block
                 );
             }
 
@@ -105,5 +106,10 @@ void * virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 }
 
 void virtual_info(void* heapstart) {
-    // Your code here
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = * (uint8_t*) (prog_break - 2);
+
+    for (heap_block* block = (heap_block*) ((uint8_t*) heapstart + heap_size); (uint8_t*) block < prog_break - 2; block++) {
+        printf("%s %d", block->allocated ? "allocated" : "free", 1 << block->size);
+    }
 }
