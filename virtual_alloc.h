@@ -1,3 +1,6 @@
+#ifndef VIRTUAL_ALLOC_H
+#define VIRTUAL_ALLOC_H
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -10,3 +13,5 @@ int virtual_free(void * heapstart, void * ptr);
 void * virtual_realloc(void * heapstart, void * ptr, uint32_t size);
 
 void virtual_info(void * heapstart);
+
+#endif
