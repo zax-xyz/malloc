@@ -42,7 +42,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
     uint8_t min_size = *(prog_break - 1);
-    printf("%d %d\n", heap_size, min_size);
+    printf("%p %d %d\n", prog_break, heap_size, min_size);
 
     if (size > 1 << heap_size)
         return NULL;
