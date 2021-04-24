@@ -59,7 +59,8 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block->size == lowest_size) {
             if (diff) {
-                memmove(block + 1, block + 1 + diff,
+                memmove(block + 1,
+                        block + 1 + diff,
                         prog_break - (uint8_t*) block);
             }
 
@@ -92,9 +93,13 @@ void virtual_info(void* heapstart) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
 
+    printf("????\n");
+
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
-         (uint8_t*) block < prog_break - 2; block++) {
-        printf("%s %d", block->allocated ? "allocated" : "free",
-               1 << block->size);
+            (uint8_t*) block < prog_break - 2;
+            block++) {
+        printf("%s %d",
+                block->allocated ? "allocated" : "free",
+                1 << block->size);
     }
 }
