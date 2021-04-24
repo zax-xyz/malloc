@@ -24,10 +24,10 @@ uint8_t log_2(uint32_t x) {
     return exp;
 }
 
-uint8_t smallest_block(block_t* blocks, void* prog_break, uint8_t min_size) {
+uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
     uint8_t lowest_size = UINT8_MAX;
 
-    for (block_t* block = blocks; (void*) block < prog_break; block++)
+    for (block_t* block = blocks; block < prog_break - 2; block++)
         if (!block->allocated && block->size >= min_size)
             lowest_size = MIN(lowest_size, block->size);
 
@@ -47,7 +47,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
 
     uint8_t needed_size = MAX(min_size, log_2(size));
 
-    block_t* blocks = (block_t*) ((uint8_t*) heapstart + heap_size);
+    block_t* blocks = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
 
     uint8_t lowest_size = smallest_block(blocks, prog_break, needed_size);
     if (lowest_size == UINT8_MAX)
