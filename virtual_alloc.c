@@ -27,7 +27,7 @@ uint8_t log_2(uint32_t x) {
 uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
     uint8_t lowest_size = UINT8_MAX;
 
-    for (block_t* block = blocks; block < prog_break - 2; block++)
+    for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++)
         if (!block->allocated && block->size >= min_size)
             lowest_size = MIN(lowest_size, block->size);
 
