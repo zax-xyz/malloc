@@ -36,14 +36,12 @@ uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
-    printf("%d\n", size);
     if (size == 0)
         return NULL;
 
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
     uint8_t min_size = *(prog_break - 1);
-    printf("%p %p %d %d\n", heapstart, prog_break, heap_size, min_size);
 
     if (size > 1 << heap_size)
         return NULL;
