@@ -16,7 +16,7 @@ typedef struct {
     uint8_t size;
 } block_t;
 
-extern void* virtual_sbrk(uint32_t increment);
+extern void* virtual_sbrk(int32_t increment);
 
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size);
 

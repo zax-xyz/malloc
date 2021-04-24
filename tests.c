@@ -1,15 +1,21 @@
 #include "virtual_alloc.h"
+#include <unistd.h>
 
 void * virtual_heap = NULL;
 
 void * virtual_sbrk(int32_t increment) {
     // Your implementation here (for your testing only)
-    return (void *)(-1);
+    return sbrk(increment);
+    // return (void *)(-1);
 }
 
 int main() {
     // Your own testing code here
+    virtual_heap = sbrk(0);
     init_allocator(virtual_heap, 15, 12);
+    virtual_info(virtual_heap);
+    virtual_malloc(virtual_heap, 12);
+    virtual_info(virtual_heap);
 
     return 0;
 }

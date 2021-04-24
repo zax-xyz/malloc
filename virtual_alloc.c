@@ -61,9 +61,9 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block->size == lowest_size) {
             if (diff) {
-                memmove(block + 1,
-                        block + 1 + diff,
-                        prog_break - (uint8_t*) block);
+                memmove(block + 1 + diff,
+                        block + 1,
+                        prog_break - (uint8_t*) (block + 1));
             }
 
             for (uint8_t i = diff; i > 0; i--) {
