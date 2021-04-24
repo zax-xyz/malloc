@@ -3,7 +3,7 @@
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
-    virtual_sbrk((1 << initial_size) + sizeof(block_t) + 2 * sizeof(uint8_t));
+    virtual_sbrk((1 << initial_size) + sizeof(block_t) + 2);
 
     uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
 
@@ -12,6 +12,7 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
     *prog_break = initial_size;
     *(prog_break + 1) = min_size;
+    printf("%d\n", initial_size);
 }
 
 uint8_t log_2(uint32_t x) {
