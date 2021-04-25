@@ -207,6 +207,9 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 
     uint8_t* prog_break = virtual_sbrk(0);
     size_t heap_size = 1 << *(uint8_t*) heapstart;
+
+    if (size > heap_size)
+        return NULL;
     
     block_t* block = get_block_info(heapstart, ptr);
     uint32_t og_size = 1 << block->size;
