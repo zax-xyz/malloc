@@ -44,7 +44,7 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
     memmove(block + offset, block, prog_break - (uint8_t*) block);
 }
 
-uint8_t* get_block(void* heapstart, block_t** block, uint8_t size) {
+uint8_t* get_block_of_size(void* heapstart, uint8_t size, block_t** block) {
     uint8_t* prog_break = virtual_sbrk(0);
     for (uint8_t* block_ptr = heapstart; (uint8_t*) *block < prog_break - 2;
             block_ptr += 1 << (*block)->size, (*block)++) {
@@ -84,7 +84,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     uint8_t diff = lowest_size - needed_size;
     virtual_sbrk(sizeof(block_t) * diff);
 
-    uint8_t* block_ptr = get_block(heapstart, &block, lowest_size);
+    uint8_t* block_ptr = get_block_of_size(heapstart, lowest_size, &block);
     if (block_ptr == NULL)
         return NULL;
 
@@ -170,11 +170,7 @@ block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     return block;
 }
 
-int virtual_free(void* heapstart, void* ptr) {
-#ifdef DEBUG
-    printf("FREE %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
-#endif
-
+block_t* get_block_info(void* heapstart, void* ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
 
@@ -183,19 +179,31 @@ int virtual_free(void* heapstart, void* ptr) {
     uint8_t* block_ptr = heapstart;
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block_ptr == ptr) {
-            if (!block->allocated)
-                return 1;
-
-            block->allocated = false;
-            block = merge_blocks(heapstart, block, block_ptr);
-
-            return 0;
+            return block;
         }
 
         block_ptr += 1 << block->size;
     }
 
-    return 1;
+    return NULL;
+}
+
+int virtual_free(void* heapstart, void* ptr) {
+#ifdef DEBUG
+    printf("FREE %lu\n", (size_t)((uint8_t*) ptr - (uint8_t*) heapstart));
+#endif
+
+    block_t* block = get_block_info(heapstart, ptr);
+    if (block == NULL)
+        return 1;
+
+    if (!block->allocated)
+        return 1;
+
+    block->allocated = false;
+    block = merge_blocks(heapstart, block, ptr);
+
+    return 0;
 }
 
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
@@ -211,11 +219,25 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     if (heapstart == 0)
         return virtual_malloc(heapstart, size);
 
-    // uint8_t* prog_break = virtual_sbrk(0);
-    // uint8_t heap_size = *(prog_break - 2);
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = *(prog_break - 2);
     
-    // virtual_sbrk(1 << heap_size);
-    // memmove(prog_break, heapstart, 1 << heap_size);
+    block_t* block = get_block_info(heapstart, ptr);
+    uint32_t og_size = 1 << block->size;
+
+    virtual_sbrk(1 << block->size);
+    memmove(prog_break, ptr, 1 << block->size);
+
+    virtual_sbrk(1 << heap_size);
+    memmove(prog_break + og_size, heapstart, 1 << heap_size);
+
+    virtual_free(heapstart, ptr);
+    void* new_block = virtual_malloc(heapstart, size);
+    if (new_block == NULL) {
+        memmove(heapstart, prog_break + og_size, 1 << heap_size);
+    } else {
+        memmove(new_block, prog_break, og_size);
+    }
 
     return NULL;
 }
