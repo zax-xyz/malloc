@@ -82,7 +82,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     //     }
     // }
 
-    return NULL;
+    return heapstart;
 }
 
 bool should_merge_left(block_t* block) {
