@@ -78,6 +78,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
 
     uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
+    printf("%d\n", lowest_size);
     if (lowest_size == UINT8_MAX)
         return NULL;
 
