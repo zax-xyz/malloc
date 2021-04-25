@@ -13,7 +13,6 @@
 
 typedef struct {
     bool allocated;
-    bool right;
     uint8_t size;
 } block_t;
 
