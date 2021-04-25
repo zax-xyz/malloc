@@ -15,6 +15,7 @@ int main() {
     printf("%d\n", log_2(2048));
 
     virtual_heap = sbrk(0);
+
     // init_allocator(virtual_heap, 15, 12);
     // virtual_info(virtual_heap);
     // virtual_malloc(virtual_heap, 1 << 12);
