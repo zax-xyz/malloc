@@ -216,7 +216,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return NULL;
     }
 
-    if (heapstart == 0)
+    if (ptr == 0)
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
