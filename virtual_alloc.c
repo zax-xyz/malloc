@@ -81,13 +81,14 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
 }
 
 bool should_merge_left(block_t* block) {
-    return block->right && !(block - 1)->allocated
-           && block->size == (block - 1)->size;
+    block_t* left = block - 1;
+    return block->right && !left->allocated && block->size == left->size;
 }
 
 bool should_merge_right(block_t* block, uint8_t heap_size) {
-    return block-> size != heap_size && !block->right && !(block + 1)->allocated
-           && block->size == (block + 1)->size;
+    block_t* right = block + 1;
+    return block->size != heap_size && !block->right && !right->allocated
+           && block->size == right->size;
 }
 
 bool is_right(block_t* block, uint8_t* start, uint8_t* end) {
@@ -120,23 +121,29 @@ int virtual_free(void* heapstart, void* ptr) {
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block_ptr == ptr) {
             block->allocated = false;
-            while (should_merge_left(block)) {
-                (block - 1)->size++;
-                memmove(block, block + 1, prog_break - (uint8_t*) (block + 1));
-                virtual_sbrk(-(int32_t) sizeof(block_t));
-                prog_break -= sizeof(block_t);
-                block--;
-                block->right = is_right(block, (uint8_t*) blocks, prog_break);
-            }
+            while (should_merge_left(block) || should_merge_right(block, heap_size)) {
+                if (should_merge_left(block)) {
+                    (block - 1)->size++;
+                    memmove(block,
+                            block + 1,
+                            prog_break - (uint8_t*) (block + 1));
+                    virtual_sbrk(-(int32_t) sizeof(block_t));
+                    prog_break -= sizeof(block_t);
+                    block--;
+                    block->right
+                            = is_right(block, (uint8_t*) blocks, prog_break);
+                }
 
-            while (should_merge_right(block, heap_size)) {
-                (block + 1)->size++;
-                memmove(block + 1,
-                        block + 2,
-                        prog_break - (uint8_t*) (block + 2));
-                virtual_sbrk(-(int32_t) sizeof(block_t));
-                prog_break -= sizeof(block_t);
-                block->right = is_right(block, (uint8_t*) blocks, prog_break);
+                if (should_merge_right(block, heap_size)) {
+                    (block + 1)->size++;
+                    memmove(block + 1,
+                            block + 2,
+                            prog_break - (uint8_t*) (block + 2));
+                    virtual_sbrk(-(int32_t) sizeof(block_t));
+                    prog_break -= sizeof(block_t);
+                    block->right
+                            = is_right(block, (uint8_t*) blocks, prog_break);
+                }
             }
 
             return 0;
