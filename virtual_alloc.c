@@ -183,8 +183,9 @@ void virtual_info(void* heapstart) {
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
             block++) {
-        printf("%s %d\n",
+        printf("%s %d %s\n",
                 block->allocated ? "allocated" : "free",
-                1 << block->size);
+                1 << block->size,
+                block->right ? "right": "left");
     }
 }
