@@ -247,7 +247,7 @@ void virtual_info(void* heapstart) {
     printf("INFO\n");
 #endif
 
-    uint8_t* prog_break = virtual_sbrk(0);
+    // uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = * (uint8_t*) heapstart;
 
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
