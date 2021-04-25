@@ -156,6 +156,9 @@ int virtual_free(void* heapstart, void* ptr) {
     uint8_t* block_ptr = heapstart;
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block_ptr == ptr) {
+            if (!block->allocated)
+                return 1;
+
             block->allocated = false;
             block = merge_blocks(heapstart, block);
 
