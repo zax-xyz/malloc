@@ -44,6 +44,20 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
     memmove(block + offset, block, prog_break - (uint8_t*) block);
 }
 
+uint8_t* get_block(void* heapstart, block_t** block, uint8_t size) {
+    uint8_t* prog_break = virtual_sbrk(0);
+    for (uint8_t* block_ptr = heapstart; (uint8_t*) *block < prog_break - 2;
+            block_ptr += 1 << (*block)->size, (*block)++) {
+        if (!(*block)->allocated && (*block)->size == size) {
+            return block_ptr;
+        }
+    }
+
+    // This shouldn't happen as long as this function is used properly. That is,
+    // using a correct size that was retrieved from smallest_block().
+    return NULL;
+}
+
 void* virtual_malloc(void* heapstart, uint32_t size) {
 #ifdef DEBUG
     printf("ALLOC %d\n", size);
@@ -70,23 +84,20 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     uint8_t diff = lowest_size - needed_size;
     virtual_sbrk(sizeof(block_t) * diff);
 
-    for (uint8_t* block_ptr = heapstart; (uint8_t*) block < prog_break - 2;
-             block_ptr += 1 << block->size, block++) {
-        if (!block->allocated && block->size == lowest_size) {
-            shift(block + 1, prog_break, diff);
+    uint8_t* block_ptr = get_block(heapstart, &block, lowest_size);
+    if (block_ptr == NULL)
+        return NULL;
 
-            for (uint8_t i = diff; i > 0; i--) {
-                block->size--;
-                *(block + i) = (block_t) {false, true, block->size};
-            }
+    shift(block + 1, prog_break, diff);
 
-            block->allocated = true;
-            block->right = diff == 0;
-            return block_ptr;
-        }
+    for (uint8_t i = diff; i > 0; i--) {
+        block->size--;
+        *(block + i) = (block_t) {false, true, block->size};
     }
 
-    return heapstart;
+    block->allocated = true;
+    block->right = diff == 0;
+    return block_ptr;
 }
 
 bool should_merge_left(block_t* block) {
@@ -199,6 +210,12 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 
     if (heapstart == 0)
         return virtual_malloc(heapstart, size);
+
+    // uint8_t* prog_break = virtual_sbrk(0);
+    // uint8_t heap_size = *(prog_break - 2);
+    
+    // virtual_sbrk(1 << heap_size);
+    // memmove(prog_break, heapstart, 1 << heap_size);
 
     return NULL;
 }
