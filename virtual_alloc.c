@@ -48,7 +48,7 @@ uint8_t* get_block_of_size(void* heapstart, uint8_t size, block_t** block) {
     for (uint8_t* block_ptr = (uint8_t*) heapstart + 2;
             block_ptr < blocks_start;
             block_ptr += 1 << (*block)->size, (*block)++) {
-        printf("%d\n", block->size);
+        printf("%d\n", (*block)->size);
         if (!(*block)->allocated && (*block)->size == size) {
             return block_ptr;
         }
