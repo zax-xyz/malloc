@@ -100,5 +100,10 @@ int main() {
     virtual_free(virtual_heap, (uint8_t*) virtual_heap + 1024 + 512 + 256);
     virtual_info(virtual_heap);
 
+    // init_allocator(virtual_heap, 11, 8);
+    // virtual_malloc(virtual_heap, 1024);
+    // virtual_realloc(virtual_heap, virtual_heap, 2048);
+    // virtual_info(virtual_heap);
+
     return 0;
 }

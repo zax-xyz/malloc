@@ -12,11 +12,10 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
     uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
 
-    *(block_t*) prog_break = (block_t) {false, false, initial_size};
-    prog_break += sizeof(block_t);
+    *(block_t*) (prog_break + 2) = (block_t) {false, false, initial_size};
 
-    *prog_break = initial_size;
-    *(prog_break + 1) = min_size;
+    *(uint8_t*) heapstart = initial_size;
+    *((uint8_t*) heapstart + 1) = min_size;
 }
 
 uint8_t log_2(uint32_t x) {
@@ -46,7 +45,8 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
 
 uint8_t* get_block_of_size(void* heapstart, uint8_t size, block_t** block) {
     uint8_t* prog_break = virtual_sbrk(0);
-    for (uint8_t* block_ptr = heapstart; (uint8_t*) *block < prog_break - 2;
+    for (uint8_t* block_ptr = (uint8_t*) heapstart + 2;
+            (uint8_t*) *block < prog_break;
             block_ptr += 1 << (*block)->size, (*block)++) {
         if (!(*block)->allocated && (*block)->size == size) {
             return block_ptr;
@@ -67,15 +67,15 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
         return NULL;
 
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
-    uint8_t min_size = *(prog_break - 1);
+    uint8_t heap_size = *(uint8_t*) heapstart;
+    uint8_t min_size = *((uint8_t*) heapstart + 1);
 
     if (size > 1 << heap_size)
         return NULL;
 
     uint8_t needed_size = MAX(min_size, log_2(size));
 
-    block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
+    block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
 
     uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
     if (lowest_size == UINT8_MAX)
@@ -111,14 +111,14 @@ bool should_merge_right(block_t* block, uint8_t heap_size) {
            && block->size == right->size;
 }
 
-bool is_right(uint8_t size, uint8_t* start, uint8_t* block_ptr) {
-    uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
-
+bool is_right(uint8_t size, uint8_t* heapstart, uint8_t* block_ptr) {
 #ifdef DEBUG
     uint8_t* heapstart = start;
     printf("%d %d %lu\n", size, heap_size, block_ptr - start);
 #endif
+
+    uint8_t heap_size = *heapstart;
+    uint8_t* start = heapstart + 2;
 
     uint8_t* end = start + (1 << heap_size);
 
@@ -147,7 +147,7 @@ bool is_right(uint8_t size, uint8_t* start, uint8_t* block_ptr) {
 
 block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
+    uint8_t heap_size = *(uint8_t*) heapstart;
 
     while (should_merge_left(block) || should_merge_right(block, heap_size)) {
         if (should_merge_left(block)) {
@@ -172,12 +172,12 @@ block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
 
 block_t* get_block_info(void* heapstart, void* ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
+    uint8_t heap_size = *(uint8_t*) heapstart;
 
-    block_t* blocks = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
+    block_t* blocks = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
 
     uint8_t* block_ptr = heapstart;
-    for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
+    for (block_t* block = blocks; (uint8_t*) block < prog_break; block++) {
         if (block_ptr == ptr) {
             return block;
         }
@@ -220,7 +220,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
+    uint8_t heap_size = *(uint8_t*) heapstart;
     
     block_t* block = get_block_info(heapstart, ptr);
     uint32_t og_size = 1 << block->size;
@@ -251,10 +251,10 @@ void virtual_info(void* heapstart) {
 #endif
 
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = *(prog_break - 2);
+    uint8_t heap_size = * (uint8_t*) heapstart;
 
-    for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
-            (uint8_t*) block < prog_break - 2;
+    for (block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
+            (uint8_t*) block < prog_break;
             block++) {
 #ifdef DEBUG
         printf("%s %d %s\n",
