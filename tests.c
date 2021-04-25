@@ -12,6 +12,7 @@ void * virtual_sbrk(int32_t increment) {
 int main() {
     // Your own testing code here
     printf("%d\n", log_2(20000));
+    printf("%d\n", log_2(2048));
 
     virtual_heap = sbrk(0);
     init_allocator(virtual_heap, 15, 12);
