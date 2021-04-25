@@ -112,13 +112,12 @@ bool should_merge_right(block_t* block, uint8_t heap_size) {
 }
 
 bool is_right(uint8_t size, uint8_t* heapstart, uint8_t* block_ptr) {
-#ifdef DEBUG
-    uint8_t* heapstart = start;
-    printf("%d %d %lu\n", size, heap_size, block_ptr - start);
-#endif
-
     uint8_t heap_size = *heapstart;
     uint8_t* start = heapstart + 2;
+
+#ifdef DEBUG
+    printf("%d %d\n", size, heap_size);
+#endif
 
     uint8_t* end = start + (1 << heap_size);
 
@@ -176,7 +175,7 @@ block_t* get_block_info(void* heapstart, void* ptr) {
 
     block_t* blocks = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
 
-    uint8_t* block_ptr = heapstart;
+    uint8_t* block_ptr = heapstart + 2;
     for (block_t* block = blocks; (uint8_t*) block < prog_break; block++) {
         if (block_ptr == ptr) {
             return block;
