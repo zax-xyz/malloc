@@ -12,7 +12,7 @@
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 #define ALLOCATED(BLOCK) ((BLOCK) & 1)
-#define SET_ALLOCATED(BLOCK, ALLOC) ((BLOCK) |= (ALLOC))
+#define SET_ALLOCATED(BLOCK, ALLOC) (BLOCK) = ((BLOCK) & ~1) | (ALLOC)
 
 #define SIZE(BLOCK) ((BLOCK) >> 1)
 #define INC_SIZE(BLOCK) BLOCK = ((SIZE(BLOCK) + 1) << 1) + ALLOCATED(BLOCK)
