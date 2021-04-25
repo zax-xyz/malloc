@@ -138,12 +138,12 @@ block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     while (1) {
         bool right = is_right(block->size, (uint8_t*) heapstart, block_ptr);
 
-        if (!right && should_merge_left(block)) {
+        if (right && should_merge_left(block)) {
             (block - 1)->size++;
             shift(block + 1, prog_break, -1);
             block--;
             block_ptr -= 1 << (block->size - 1);
-        } else if (right && should_merge_right(block, heap_size)) {
+        } else if (!right && should_merge_right(block, heap_size)) {
             (block + 1)->size++;
             shift(block + 1, prog_break, -1);
         } else {
