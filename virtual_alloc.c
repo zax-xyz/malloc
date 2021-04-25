@@ -45,42 +45,42 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
 void* virtual_malloc(void* heapstart, uint32_t size) {
     printf("ALLOC %d\n", size);
 
-    // if (size == 0)
-    //     return NULL;
+    if (size == 0)
+        return NULL;
 
-    // uint8_t* prog_break = virtual_sbrk(0);
-    // uint8_t heap_size = *(prog_break - 2);
-    // uint8_t min_size = *(prog_break - 1);
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = *(prog_break - 2);
+    uint8_t min_size = *(prog_break - 1);
 
-    // if (size > 1 << heap_size)
-    //     return NULL;
+    if (size > 1 << heap_size)
+        return NULL;
 
-    // uint8_t needed_size = MAX(min_size, log_2(size));
+    uint8_t needed_size = MAX(min_size, log_2(size));
 
-    // block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
+    block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
 
-    // uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
-    // if (lowest_size == UINT8_MAX)
-    //     return NULL;
+    uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
+    if (lowest_size == UINT8_MAX)
+        return NULL;
 
-    // uint8_t diff = lowest_size - needed_size;
-    // virtual_sbrk(sizeof(block_t) * diff);
+    uint8_t diff = lowest_size - needed_size;
+    virtual_sbrk(sizeof(block_t) * diff);
 
-    // for (uint8_t* block_ptr = heapstart; (uint8_t*) block < prog_break - 2;
-    //         block++, block_ptr += 1 << block->size) {
-    //     if (!block->allocated && block->size == lowest_size) {
-    //         shift(block + 1, prog_break, diff);
+    for (uint8_t* block_ptr = heapstart; (uint8_t*) block < prog_break - 2;
+            block++, block_ptr += 1 << block->size) {
+        if (!block->allocated && block->size == lowest_size) {
+            shift(block + 1, prog_break, diff);
 
-    //         for (uint8_t i = diff; i > 0; i--) {
-    //             block->size--;
-    //             *(block + i) = (block_t) {false, true, block->size};
-    //         }
+            for (uint8_t i = diff; i > 0; i--) {
+                block->size--;
+                *(block + i) = (block_t) {false, true, block->size};
+            }
 
-    //         block->allocated = true;
-    //         block->right = diff == 0;
-    //         return block_ptr;
-    //     }
-    // }
+            block->allocated = true;
+            block->right = diff == 0;
+            return block_ptr;
+        }
+    }
 
     return heapstart;
 }
