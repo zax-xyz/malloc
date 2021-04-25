@@ -101,10 +101,10 @@ bool is_right(block_t* block, uint8_t* start, uint8_t* end) {
     while (start < end) {
         mid = start + (end - start) / 2;
         if (mid == (uint8_t*) block)
-            return false;
+            return true;
 
         if (mid == (uint8_t*) block + (1 << block->size))
-            return true;
+            return false;
 
         if ((uint8_t*) block > mid) {
             start = mid;
@@ -182,9 +182,8 @@ void virtual_info(void* heapstart) {
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
             block++) {
-        printf("%s %d %s\n",
+        printf("%s %d\n",
                 block->allocated ? "allocated" : "free",
-                1 << block->size,
-                block->right ? "right" : "left");
+                1 << block->size);
     }
 }
