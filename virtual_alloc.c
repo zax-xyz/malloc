@@ -16,8 +16,8 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 }
 
 uint8_t log_2(uint32_t x) {
-    uint8_t exp = 0;
-    while (x > 1) {
+    uint8_t exp = 1;
+    while (x > 2) {
         exp++;
         x >>= 1;
     }
