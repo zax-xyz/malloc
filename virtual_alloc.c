@@ -48,6 +48,7 @@ uint8_t* get_block_of_size(void* heapstart, uint8_t size, block_t** block) {
     for (uint8_t* block_ptr = (uint8_t*) heapstart + 2;
             block_ptr < blocks_start;
             block_ptr += 1 << (*block)->size, (*block)++) {
+        printf("%d\n", block->size);
         if (!(*block)->allocated && (*block)->size == size) {
             return block_ptr;
         }
@@ -78,7 +79,6 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
 
     uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
-    printf("%d\n", lowest_size);
     if (lowest_size == UINT8_MAX)
         return NULL;
 
