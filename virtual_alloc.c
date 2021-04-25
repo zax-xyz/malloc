@@ -149,7 +149,7 @@ block_t* merge_blocks(void* heapstart, block_t* block) {
 }
 
 int virtual_free(void* heapstart, void* ptr) {
-    printf("free %d\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
+    printf("free %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
 
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
