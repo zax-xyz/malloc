@@ -29,34 +29,34 @@ uint8_t log_2(uint32_t x) {
     return exp;
 }
 
-uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
+block_t* smallest_block(void* heapstart, uint8_t min_size, uint8_t** ptr) {
     uint8_t lowest_size = UINT8_MAX;
+    block_t* smallest_block = NULL;
+    uint8_t* smallest_block_ptr = NULL;
 
-    for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++)
-        if (!block->allocated && block->size >= min_size)
-            lowest_size = MIN(lowest_size, block->size);
+    uint8_t heap_size = * (uint8_t*) heapstart;
+    uint8_t* heap = (uint8_t*) heapstart + 2;
 
-    return lowest_size;
+    uint8_t* info_start = heap + (1 << heap_size);
+
+    block_t* block = (block_t*) info_start;
+
+    for (; *ptr < info_start; *ptr += 1 << block->size, block++) {
+        if (!block->allocated && block->size >= min_size
+                && block->size < lowest_size) {
+            lowest_size = block->size;
+            smallest_block = block;
+            smallest_block_ptr = *ptr;
+        }
+    }
+
+    *ptr = smallest_block_ptr;
+
+    return smallest_block;
 }
 
 void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
     memmove(block + offset, block, prog_break - (uint8_t*) block);
-}
-
-uint8_t* get_block_of_size(void* heapstart, uint8_t size, block_t** block) {
-    uint8_t* blocks_start = (uint8_t*) *block;
-    for (uint8_t* block_ptr = (uint8_t*) heapstart + 2;
-            block_ptr < blocks_start;
-            block_ptr += 1 << (*block)->size, (*block)++) {
-        printf("%d\n", (*block)->size);
-        if (!(*block)->allocated && (*block)->size == size) {
-            return block_ptr;
-        }
-    }
-
-    // This shouldn't happen as long as this function is used properly. That is,
-    // using a correct size that was retrieved from smallest_block().
-    return NULL;
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
@@ -67,7 +67,6 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     if (size == 0)
         return NULL;
 
-    uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(uint8_t*) heapstart;
     uint8_t min_size = *((uint8_t*) heapstart + 1);
 
@@ -76,20 +75,15 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
 
     uint8_t needed_size = MAX(min_size, log_2(size));
 
-    block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
-
-    uint8_t lowest_size = smallest_block(block, prog_break, needed_size);
-    if (lowest_size == UINT8_MAX)
+    uint8_t* ptr = (uint8_t*) heapstart + 2;
+    block_t* block = smallest_block(heapstart, needed_size, &ptr);
+    if (block == NULL)
         return NULL;
 
-    uint8_t diff = lowest_size - needed_size;
+    uint8_t diff = block->size - needed_size;
     virtual_sbrk(sizeof(block_t) * diff);
 
-    uint8_t* block_ptr = get_block_of_size(heapstart, lowest_size, &block);
-    if (block_ptr == NULL)
-        return NULL;
-
-    shift(block + 1, prog_break, diff);
+    shift(block + 1, virtual_sbrk(0), diff);
 
     for (uint8_t i = diff; i > 0; i--) {
         block->size--;
@@ -98,7 +92,8 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
 
     block->allocated = true;
     block->right = diff == 0;
-    return block_ptr;
+
+    return ptr;
 }
 
 bool should_merge_left(block_t* block) {
@@ -211,23 +206,19 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = 1 << *(uint8_t*) heapstart;
+    size_t heap_size = 1 << *(uint8_t*) heapstart;
     
     block_t* block = get_block_info(heapstart, ptr);
     uint32_t og_size = 1 << block->size;
 
     virtual_sbrk(og_size);
     memmove(prog_break, ptr, og_size);
-    virtual_info(heapstart);
 
     virtual_sbrk(heap_size);
     memmove(prog_break + og_size, heapstart, heap_size);
 
-    virtual_info(heapstart);
     virtual_free(heapstart, ptr);
-    virtual_info(heapstart);
     void* new_block = virtual_malloc(heapstart, size);
-    virtual_info(heapstart);
 
     uint8_t* new_prog_break = virtual_sbrk(0);
 
