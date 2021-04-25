@@ -235,13 +235,14 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     void* new_block = virtual_malloc(heapstart, size);
     if (new_block == NULL) {
         memmove(heapstart, prog_break + og_size, 1 << heap_size);
-    } else {
-        memmove(new_block, prog_break, og_size);
+        virtual_sbrk(-(1 << heap_size) - og_size);
+        return NULL;
     }
 
+    memmove(new_block, prog_break, og_size);
     virtual_sbrk(-(1 << heap_size) - og_size);
 
-    return NULL;
+    return new_block;
 }
 
 void virtual_info(void* heapstart) {
