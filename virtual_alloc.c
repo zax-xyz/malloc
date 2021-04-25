@@ -8,7 +8,7 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
     uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
 
-    *(block_t*) prog_break = (block_t) {false, initial_size};
+    *(block_t*) prog_break = (block_t) {false, false, initial_size};
     prog_break += sizeof(block_t);
 
     *prog_break = initial_size;
@@ -16,8 +16,8 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 }
 
 uint8_t log_2(uint32_t x) {
-    uint8_t exp = 1;
-    while (x > 2) {
+    uint8_t exp = 0;
+    while (x > 1) {
         exp++;
         x >>= 1;
     }
@@ -61,15 +61,13 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     uint8_t* block_ptr = heapstart;
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (!block->allocated && block->size == lowest_size) {
-            if (diff) {
-                memmove(block + 1 + diff,
-                        block + 1,
-                        prog_break - (uint8_t*) (block + 1));
-            }
+            memmove(block + 1 + diff,
+                    block + 1,
+                    prog_break - (uint8_t*) (block + 1));
 
             for (uint8_t i = diff; i > 0; i--) {
                 block->size--;
-                *(block + i) = (block_t) {false, block->size};
+                *(block + i) = (block_t) {false, true, block->size};
             }
 
             block->allocated = true;
@@ -82,8 +80,46 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     return NULL;
 }
 
+bool should_merge_left(block_t* block) {
+    return block->right && !(block - 1)->allocated
+           && block->size == (block - 1)->size;
+}
+
+bool should_merge_right(block_t* block, uint8_t heap_size) {
+    return block-> size != heap_size && !block->right && !(block + 1)->allocated
+           && block->size == (block + 1)->size;
+}
+
 int virtual_free(void* heapstart, void* ptr) {
-    // Your code here
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = *(prog_break - 2);
+
+    block_t* blocks = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
+
+    uint8_t* block_ptr = heapstart;
+    for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
+        if (block_ptr == ptr) {
+            block->allocated = false;
+            if (should_merge_left(block)) {
+                while (should_merge_left(block)) {
+                    (block - 1)->size++;
+                    memmove(block,
+                            block + 1,
+                            prog_break - (uint8_t*) (block + 1));
+                }
+            } else if (should_merge_right(block, heap_size)) {
+                while (should_merge_right(block, heap_size)) {
+                    (block + 1)->size++;
+                    memmove(block + 1,
+                            block + 2,
+                            prog_break - (uint8_t*) (block + 2));
+                }
+            }
+        }
+
+        block_ptr += 1 << block->size;
+    }
+
     return 1;
 }
 
