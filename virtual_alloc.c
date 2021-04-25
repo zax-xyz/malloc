@@ -221,13 +221,15 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     virtual_sbrk(heap_size);
     memmove(prog_break + og_size, heapstart, heap_size);
 
+    virtual_info(heapstart);
     virtual_free(heapstart, ptr);
+    virtual_info(heapstart);
     void* new_block = virtual_malloc(heapstart, size);
+    virtual_info(heapstart);
 
     uint8_t* new_prog_break = virtual_sbrk(0);
 
     if (new_block == NULL) {
-        printf("bruh\n");
         memmove(heapstart, new_prog_break - heap_size, heap_size);
         virtual_sbrk(-heap_size - og_size);
         return NULL;
