@@ -17,7 +17,7 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
 uint8_t log_2(uint32_t x) {
     uint8_t exp = 1;
-    while (x > 2) {
+    while (x >= 2) {
         exp++;
         x >>= 1;
     }
@@ -40,7 +40,7 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
-    printf("alloc %d\n", size);
+    // printf("alloc %d\n", size);
     if (size == 0)
         return NULL;
 
@@ -150,7 +150,7 @@ block_t* merge_blocks(void* heapstart, block_t* block) {
 }
 
 int virtual_free(void* heapstart, void* ptr) {
-    printf("free %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
+    // printf("free %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
 
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
