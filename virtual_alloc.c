@@ -215,7 +215,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     memmove(prog_break, ptr, og_size);
 
     virtual_sbrk(heap_size);
-    memmove(prog_break + og_size, heapstart, heap_size);
+    memmove(prog_break + og_size, (uint8_t*) heapstart + 2, heap_size);
 
     virtual_free(heapstart, ptr);
     void* new_block = virtual_malloc(heapstart, size);
@@ -223,7 +223,9 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     uint8_t* new_prog_break = virtual_sbrk(0);
 
     if (new_block == NULL) {
-        memmove(heapstart, new_prog_break - heap_size, heap_size);
+        memmove((uint8_t*) heapstart + 2,
+                new_prog_break - heap_size,
+                heap_size);
         virtual_sbrk(-heap_size - og_size);
         return NULL;
     }
@@ -240,9 +242,9 @@ void virtual_info(void* heapstart) {
 #endif
 
     uint8_t* prog_break = virtual_sbrk(0);
-    uint8_t heap_size = * (uint8_t*) heapstart;
+    size_t heap_size = 1 << *(uint8_t*) heapstart;
 
-    for (block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
+    for (block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + heap_size);
             (uint8_t*) block < prog_break;
             block++) {
 #ifdef DEBUG
