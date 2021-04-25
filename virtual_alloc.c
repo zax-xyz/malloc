@@ -1,7 +1,7 @@
 #include "virtual_alloc.h"
 
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
-    printf("INIT %d %d\n", initial_size, min_size);
+    // printf("INIT %d %d\n", initial_size, min_size);
 
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
@@ -43,7 +43,7 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
-    printf("ALLOC %d\n", size);
+    // printf("ALLOC %d\n", size);
 
     if (size == 0)
         return NULL;
@@ -99,56 +99,60 @@ bool should_merge_right(block_t* block, uint8_t heap_size) {
            && block->size == right->size;
 }
 
-bool is_right(block_t* block, uint8_t* start, uint8_t* end) {
+bool is_right(block_t* block, uint8_t* start, uint8_t* end, uint8_t* block_ptr) {
     uint8_t* mid;
-    while (start < end) {
-        mid = start + (end - start) / 2;
-        if (mid == (uint8_t*) block)
-            return false;
-
-        if (mid == (uint8_t*) block + (1 << block->size))
+    // uint8_t* heapstart = start;
+    // printf("%d\n", block->size);
+    // printf("%lu\n", block_ptr - start);
+    while (1) {
+        // printf("%lu\n", end - start);
+        // printf("%lu\n", start - heapstart);
+        if (block_ptr + (1 << block->size) == end)
             return true;
 
-        if ((uint8_t*) block > mid) {
+        if (block_ptr == start)
+            return false;
+
+        mid = start + (end - start) / 2;
+
+        if (block_ptr > mid) {
             start = mid;
         } else {
             end = mid;
         }
     }
-
-    return false;
 }
 
-block_t* merge_blocks(void* heapstart, block_t* block) {
+block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
-
-    block_t* blocks = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
 
     while (should_merge_left(block) || should_merge_right(block, heap_size)) {
         if (should_merge_left(block)) {
             (block - 1)->size++;
             shift(block + 1, prog_break, -1);
             block--;
-        }
-
-        if (should_merge_right(block, heap_size)) {
+            block_ptr -= 1 << (block->size - 1);
+            // printf("merging left\n");
+        } else if (should_merge_right(block, heap_size)) {
             (block + 1)->size++;
             shift(block + 1, prog_break, -1);
+            // printf("merging right\n");
         }
 
         // shrink heap
         virtual_sbrk(-(int32_t) sizeof(block_t));
         prog_break -= sizeof(block_t);
 
-        block->right = is_right(block, (uint8_t*) blocks, prog_break);
+        block->right = is_right(block, heapstart, (uint8_t*) heapstart + (1 << heap_size), block_ptr);
+        // printf("\n");
     }
 
     return block;
 }
 
 int virtual_free(void* heapstart, void* ptr) {
-    printf("FREE %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
+    // printf("FREE %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
 
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
@@ -162,7 +166,7 @@ int virtual_free(void* heapstart, void* ptr) {
                 return 1;
 
             block->allocated = false;
-            block = merge_blocks(heapstart, block);
+            block = merge_blocks(heapstart, block, block_ptr);
 
             return 0;
         }
@@ -185,9 +189,8 @@ void virtual_info(void* heapstart) {
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
             block++) {
-        printf("%s %d %s\n",
+        printf("%s %d\n",
                 block->allocated ? "allocated" : "free",
-                1 << block->size,
-                block->right ? "right": "left");
+                1 << block->size);
     }
 }

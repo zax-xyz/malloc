@@ -35,5 +35,18 @@ int main() {
     virtual_free(virtual_heap, virtual_heap);
     virtual_info(virtual_heap);
 
+    printf("\n");
+
+    init_allocator(virtual_heap, 18, 11);
+    virtual_malloc(virtual_heap, 2049);
+    virtual_malloc(virtual_heap, 2048);
+    virtual_info(virtual_heap);
+    printf("\n");
+    virtual_free(virtual_heap, virtual_heap);
+    virtual_info(virtual_heap);
+    printf("\n");
+    virtual_free(virtual_heap, (uint8_t*) virtual_heap + 4096);
+    virtual_info(virtual_heap);
+
     return 0;
 }
