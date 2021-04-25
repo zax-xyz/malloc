@@ -90,6 +90,26 @@ bool should_merge_right(block_t* block, uint8_t heap_size) {
            && block->size == (block + 1)->size;
 }
 
+bool is_right(block_t* block, uint8_t* start, uint8_t* end) {
+    uint8_t* mid;
+    while (start < end) {
+        mid = start + (end - start) / 2;
+        if (mid == (uint8_t*) block)
+            return false;
+
+        if (mid == (uint8_t*) block + (1 << block->size))
+            return true;
+
+        if ((uint8_t*) block > mid) {
+            start = mid;
+        } else {
+            end = mid;
+        }
+    }
+
+    return false;
+}
+
 int virtual_free(void* heapstart, void* ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
@@ -103,6 +123,10 @@ int virtual_free(void* heapstart, void* ptr) {
             while (should_merge_left(block)) {
                 (block - 1)->size++;
                 memmove(block, block + 1, prog_break - (uint8_t*) (block + 1));
+                virtual_sbrk(-(int32_t) sizeof(block_t));
+                prog_break -= sizeof(block_t);
+                block--;
+                block->right = is_right(block, (uint8_t*) blocks, prog_break);
             }
 
             while (should_merge_right(block, heap_size)) {
@@ -110,6 +134,9 @@ int virtual_free(void* heapstart, void* ptr) {
                 memmove(block + 1,
                         block + 2,
                         prog_break - (uint8_t*) (block + 2));
+                virtual_sbrk(-(int32_t) sizeof(block_t));
+                prog_break -= sizeof(block_t);
+                block->right = is_right(block, (uint8_t*) blocks, prog_break);
             }
 
             return 0;
