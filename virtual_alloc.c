@@ -35,6 +35,10 @@ uint8_t smallest_block(block_t* blocks, uint8_t* prog_break, uint8_t min_size) {
     return lowest_size;
 }
 
+void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
+    memmove(block + 1 + offset, block + 1, prog_break - (uint8_t*) (block + 1));
+}
+
 void* virtual_malloc(void* heapstart, uint32_t size) {
     if (size == 0)
         return NULL;
@@ -61,9 +65,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     uint8_t* block_ptr = heapstart;
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (!block->allocated && block->size == lowest_size) {
-            memmove(block + 1 + diff,
-                    block + 1,
-                    prog_break - (uint8_t*) (block + 1));
+            shift(block, prog_break, diff);
 
             for (uint8_t i = diff; i > 0; i--) {
                 block->size--;
@@ -120,18 +122,24 @@ block_t* merge_blocks(void* heapstart, block_t* block) {
     while (should_merge_left(block) || should_merge_right(block, heap_size)) {
         if (should_merge_left(block)) {
             (block - 1)->size++;
-            memmove(block, block + 1, prog_break - (uint8_t*) (block + 1));
+
+            shift(block, prog_break, -1);
+
             virtual_sbrk(-(int32_t) sizeof(block_t));
             prog_break -= sizeof(block_t);
+
             block--;
             block->right = is_right(block, (uint8_t*) blocks, prog_break);
         }
 
         if (should_merge_right(block, heap_size)) {
             (block + 1)->size++;
-            memmove(block, block + 1, prog_break - (uint8_t*) (block + 1));
+
+            shift(block, prog_break, -1);
+
             virtual_sbrk(-(int32_t) sizeof(block_t));
             prog_break -= sizeof(block_t);
+
             block->right = is_right(block, (uint8_t*) blocks, prog_break);
         }
     }
