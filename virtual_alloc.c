@@ -115,19 +115,11 @@ bool is_right(uint8_t size, uint8_t* heapstart, uint8_t* block_ptr) {
     uint8_t heap_size = *heapstart;
     uint8_t* start = heapstart + 2;
 
-#ifdef DEBUG
-    printf("%d %d\n", size, heap_size);
-#endif
-
     uint8_t* end = start + (1 << heap_size);
 
     uint8_t* mid;
 
     while (1) {
-#ifdef DEBUG
-        printf("%lu %lu\n", start - heapstart, end - heapstart);
-#endif
-
         if (block_ptr + (1 << size) == end)
             return true;
 
@@ -188,7 +180,7 @@ block_t* get_block_info(void* heapstart, void* ptr) {
 
 int virtual_free(void* heapstart, void* ptr) {
 #ifdef DEBUG
-    printf("FREE %lu\n", (size_t)((uint8_t*) ptr - (uint8_t*) heapstart));
+    printf("FREE %lu\n", (size_t)((uint8_t*) ptr - (uint8_t*) heapstart) - 2);
 #endif
 
     block_t* block = get_block_info(heapstart, ptr);
@@ -206,7 +198,7 @@ int virtual_free(void* heapstart, void* ptr) {
 
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 #ifdef DEBUG
-    printf("REALLOC %lu %u\n", (uint8_t*) ptr - (uint8_t*) heapstart, size);
+    printf("REALLOC %lu %u\n", (uint8_t*) ptr - (uint8_t*) heapstart - 2, size);
 #endif
 
     if (size == 0) {
@@ -235,6 +227,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     uint8_t* new_prog_break = virtual_sbrk(0);
 
     if (new_block == NULL) {
+        printf("bruh\n");
         memmove(heapstart, new_prog_break - heap_size, heap_size);
         virtual_sbrk(-heap_size - og_size);
         return NULL;
