@@ -22,5 +22,15 @@ int main() {
     virtual_malloc(virtual_heap, 1 << 12);
     virtual_info(virtual_heap);
 
+    printf("\n");
+
+    virtual_free(virtual_heap, (uint8_t*) virtual_heap + (1 << 12));
+    virtual_info(virtual_heap);
+
+    printf("\n");
+
+    virtual_free(virtual_heap, virtual_heap);
+    virtual_info(virtual_heap);
+
     return 0;
 }
