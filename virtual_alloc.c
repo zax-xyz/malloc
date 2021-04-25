@@ -239,6 +239,8 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         memmove(new_block, prog_break, og_size);
     }
 
+    virtual_sbrk(-(1 << heap_size) - og_size);
+
     return NULL;
 }
 
