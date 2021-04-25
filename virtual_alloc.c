@@ -78,7 +78,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
             }
 
             block->allocated = true;
-            block->right = false;
+            block->right = diff == 0;
             return block_ptr;
         }
 
@@ -99,15 +99,16 @@ bool should_merge_right(block_t* block, uint8_t heap_size) {
            && block->size == right->size;
 }
 
-bool is_right(block_t* block, uint8_t* start, uint8_t* end, uint8_t* block_ptr) {
+bool is_right(uint8_t size, uint8_t* start, uint8_t* block_ptr) {
+    uint8_t* prog_break = virtual_sbrk(0);
+    uint8_t heap_size = *(prog_break - 2);
+
+    uint8_t* end = start + (1 << heap_size);
+
     uint8_t* mid;
-    // uint8_t* heapstart = start;
-    // printf("%d\n", block->size);
-    // printf("%lu\n", block_ptr - start);
+
     while (1) {
-        // printf("%lu\n", end - start);
-        // printf("%lu\n", start - heapstart);
-        if (block_ptr + (1 << block->size) == end)
+        if (block_ptr + (1 << size) == end)
             return true;
 
         if (block_ptr == start)
@@ -133,19 +134,18 @@ block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
             shift(block + 1, prog_break, -1);
             block--;
             block_ptr -= 1 << (block->size - 1);
-            // printf("merging left\n");
         } else if (should_merge_right(block, heap_size)) {
             (block + 1)->size++;
             shift(block + 1, prog_break, -1);
-            // printf("merging right\n");
         }
 
         // shrink heap
         virtual_sbrk(-(int32_t) sizeof(block_t));
         prog_break -= sizeof(block_t);
 
-        block->right = is_right(block, heapstart, (uint8_t*) heapstart + (1 << heap_size), block_ptr);
-        // printf("\n");
+        block->right = is_right(block->size,
+                heapstart,
+                block_ptr);
     }
 
     return block;
@@ -189,8 +189,9 @@ void virtual_info(void* heapstart) {
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + (1 << heap_size));
             (uint8_t*) block < prog_break - 2;
             block++) {
-        printf("%s %d\n",
+        printf("%s %d %s\n",
                 block->allocated ? "allocated" : "free",
-                1 << block->size);
+                1 << block->size,
+                block->right ? "right" : "left");
     }
 }

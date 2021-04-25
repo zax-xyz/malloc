@@ -15,37 +15,58 @@ int main() {
     printf("%d\n", log_2(2048));
 
     virtual_heap = sbrk(0);
-    init_allocator(virtual_heap, 15, 12);
-    virtual_info(virtual_heap);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_info(virtual_heap);
+    // init_allocator(virtual_heap, 15, 12);
+    // virtual_info(virtual_heap);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_malloc(virtual_heap, 1 << 12);
+    // virtual_info(virtual_heap);
 
-    printf("\n");
+    // printf("\n");
 
-    virtual_free(virtual_heap, (uint8_t*) virtual_heap + (1 << 12));
-    virtual_info(virtual_heap);
+    // virtual_free(virtual_heap, (uint8_t*) virtual_heap + (1 << 12));
+    // virtual_info(virtual_heap);
 
-    printf("\n");
+    // printf("\n");
 
-    virtual_free(virtual_heap, virtual_heap);
-    virtual_info(virtual_heap);
+    // virtual_free(virtual_heap, virtual_heap);
+    // virtual_info(virtual_heap);
 
-    printf("\n");
+    // printf("\n");
+
+    // init_allocator(virtual_heap, 18, 11);
+    // virtual_malloc(virtual_heap, 2049);
+    // virtual_malloc(virtual_heap, 2048);
+    // virtual_info(virtual_heap);
+    // printf("\n");
+    // virtual_free(virtual_heap, virtual_heap);
+    // virtual_info(virtual_heap);
+    // printf("\n");
+    // virtual_free(virtual_heap, (uint8_t*) virtual_heap + 4096);
+    // virtual_info(virtual_heap);
 
     init_allocator(virtual_heap, 18, 11);
-    virtual_malloc(virtual_heap, 2049);
+    virtual_malloc(virtual_heap, 4095);
+    virtual_malloc(virtual_heap, 2048);
+    virtual_malloc(virtual_heap, 5000);
+    virtual_info(virtual_heap);
+    printf("\n");
+    virtual_free(virtual_heap, virtual_heap);
+    virtual_info(virtual_heap);
+    printf("\n");
     virtual_malloc(virtual_heap, 2048);
     virtual_info(virtual_heap);
     printf("\n");
-    virtual_free(virtual_heap, virtual_heap);
+    virtual_free(virtual_heap, (uint8_t*) virtual_heap + 8192);
     virtual_info(virtual_heap);
     printf("\n");
     virtual_free(virtual_heap, (uint8_t*) virtual_heap + 4096);
+    virtual_info(virtual_heap);
+    printf("\n");
+    virtual_free(virtual_heap, (uint8_t*) virtual_heap + 6144);
     virtual_info(virtual_heap);
 
     return 0;
