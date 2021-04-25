@@ -40,14 +40,12 @@ void shift(block_t* block, uint8_t* prog_break, int16_t offset) {
 }
 
 void* virtual_malloc(void* heapstart, uint32_t size) {
-    // printf("alloc %d\n", size);
     if (size == 0)
         return NULL;
 
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
     uint8_t min_size = *(prog_break - 1);
-    printf("%d %d\n", heap_size, min_size);
 
     if (size > 1 << heap_size)
         return NULL;
@@ -150,8 +148,6 @@ block_t* merge_blocks(void* heapstart, block_t* block) {
 }
 
 int virtual_free(void* heapstart, void* ptr) {
-    // printf("free %lu\n", (size_t) ((uint8_t*) ptr - (uint8_t*) heapstart));
-
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(prog_break - 2);
 
