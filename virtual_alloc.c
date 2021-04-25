@@ -1,7 +1,7 @@
 #include "virtual_alloc.h"
 
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
-    // printf("INIT %d %d\n", initial_size, min_size);
+    printf("INIT %d %d\n", initial_size, min_size);
 
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
