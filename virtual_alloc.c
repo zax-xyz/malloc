@@ -71,7 +71,7 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     virtual_sbrk(sizeof(block_t) * diff);
 
     for (uint8_t* block_ptr = heapstart; (uint8_t*) block < prog_break - 2;
-            block++, block_ptr += 1 << block->size) {
+             block_ptr += 1 << block->size, block++) {
         if (!block->allocated && block->size == lowest_size) {
             shift(block + 1, prog_break, diff);
 
@@ -184,7 +184,7 @@ int virtual_free(void* heapstart, void* ptr) {
         block_ptr += 1 << block->size;
     }
 
-    return 0;
+    return 1;
 }
 
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
