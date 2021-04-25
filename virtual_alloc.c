@@ -17,7 +17,7 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
 uint8_t log_2(uint32_t x) {
     uint8_t exp = 0;
-    while (x > 0) {
+    while (x > 1) {
         exp++;
         x >>= 1;
     }
@@ -100,21 +100,19 @@ int virtual_free(void* heapstart, void* ptr) {
     for (block_t* block = blocks; (uint8_t*) block < prog_break - 2; block++) {
         if (block_ptr == ptr) {
             block->allocated = false;
-            if (should_merge_left(block)) {
-                while (should_merge_left(block)) {
-                    (block - 1)->size++;
-                    memmove(block,
-                            block + 1,
-                            prog_break - (uint8_t*) (block + 1));
-                }
-            } else if (should_merge_right(block, heap_size)) {
-                while (should_merge_right(block, heap_size)) {
-                    (block + 1)->size++;
-                    memmove(block + 1,
-                            block + 2,
-                            prog_break - (uint8_t*) (block + 2));
-                }
+            while (should_merge_left(block)) {
+                (block - 1)->size++;
+                memmove(block, block + 1, prog_break - (uint8_t*) (block + 1));
             }
+
+            while (should_merge_right(block, heap_size)) {
+                (block + 1)->size++;
+                memmove(block + 1,
+                        block + 2,
+                        prog_break - (uint8_t*) (block + 2));
+            }
+
+            return 0;
         }
 
         block_ptr += 1 << block->size;
