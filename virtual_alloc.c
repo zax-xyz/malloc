@@ -251,7 +251,7 @@ void virtual_info(void* heapstart) {
     uint8_t heap_size = * (uint8_t*) heapstart;
 
     for (block_t* block = (block_t*) ((uint8_t*) heapstart + 2 + (1 << heap_size));
-            (uint8_t*) block < prog_break;
+            (uint8_t*) block < (uint8_t*) heapstart + 2 + heap_size + 3;
             block++) {
 #ifdef DEBUG
         printf("%s %d %s\n",
