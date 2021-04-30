@@ -9,7 +9,6 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
     // minimum block size
     virtual_sbrk(heapstart - virtual_sbrk(0));  // reset heap
     virtual_sbrk((1 << initial_size) + 1 + 2);
-    printf("bruh?\n");
 
     uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
 
