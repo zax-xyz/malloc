@@ -136,10 +136,6 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         // if block pointer is NULL, behave as malloc
         return virtual_malloc(heapstart, size);
 
-    uint8_t* prog_break = virtual_sbrk(0);
-    if (prog_break == (uint8_t*) -1)
-        return NULL;
-
     size_t heap_size = 1 << *(uint8_t*) heapstart;
     uint8_t* heap = (uint8_t*) heapstart + 2;
 
@@ -153,6 +149,10 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return NULL;
 
     uint32_t og_size = 1 << block->size;
+
+    uint8_t* prog_break = (uint8_t*) virtual_sbrk(0);
+    if (prog_break == (uint8_t*) -1)
+        return NULL;
 
     // expand the virtual heap so that we can copy the blocks for backup
     if (virtual_sbrk(heap_size) == (void*) -1)
@@ -203,15 +203,14 @@ void virtual_info(void* heapstart) {
     printf("INFO\n");
 #endif
 
-    uint8_t* prog_break = virtual_sbrk(0);
-    if (prog_break == (uint8_t*) -1)
+    block_t* prog_break = (block_t*) virtual_sbrk(0);
+    if (prog_break == (block_t*) -1)
         return;
 
     size_t heap_size = 1 << *(uint8_t*) heapstart;
+    block_t* info_start = (block_t*) heapstart + 2 + heap_size;
 
-    for (block_t* block = (block_t*) heapstart + 2 + heap_size;
-            (uint8_t*) block < prog_break;
-            block++) {
+    for (block_t* block = info_start; block < prog_break; block++) {
         printf("%s %d\n",
                 block->allocated ? "allocated" : "free",
                 1 << block->size);

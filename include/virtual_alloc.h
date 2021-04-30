@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define HEAP_START 8
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
