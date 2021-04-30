@@ -9,11 +9,11 @@ INCLUDES=-I$(INCDIR)
 
 .PHONY: tests debug clean
 
-tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
-	$(CC) $^ -o $@
-
 debug: DEBUG=-DDEBUG
 debug: tests
+
+tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
+	$(CC) $^ -o $@
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
