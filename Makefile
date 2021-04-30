@@ -12,7 +12,6 @@ INCLUDES=-I$(INCDIR)
 debug: DEBUG=-DDEBUG
 debug: tests
 
-tests: DEBUG=-DDEBUG
 tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
 	$(CC) $^ -o $@
 

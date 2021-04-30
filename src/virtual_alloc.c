@@ -118,7 +118,8 @@ int virtual_free(void* heapstart, void* ptr) {
  * Attempts to resize a block to a specified size, moving it if necessary.
  * If the specified size is lower than the original size, truncates the data.
  * If the block is unable to be reallocated, the heap is left unchanged and NULL
- * is returned. Otherwise, a pointer to the new block is returned.
+ * is returned. Otherwise, a pointer to the new block is returned. If ptr is
+ * NULL, 
  */
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 #ifdef DEBUG
@@ -130,7 +131,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return NULL;
     }
 
-    if (ptr == 0)
+    if (ptr == NULL)
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
