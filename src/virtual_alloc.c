@@ -12,19 +12,27 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
-    virtual_sbrk(heapstart - virtual_sbrk(0));  // reset heap
+    void* prog_break = virtual_sbrk(0);
+    if (prog_break == (void*) -1)
+        return;
+
+    virtual_sbrk(heapstart - prog_break);  // reset heap
     // allocate space for heap, as well as 1 byte for first block information,
     // and storing initial_size and min_size
     virtual_sbrk((1 << initial_size) + 1 + 2);
 
-    block_t* prog_break = (block_t*) virtual_sbrk(0);
+    // store information about first block (free, full heap size)
+    block_t* info_start = (block_t*) heapstart + 2 + (1 << initial_size);
+    *info_start = (block_t) {false, initial_size};
 
-    prog_break[-1] = (block_t) {false, initial_size};
-
+    // store basic information about heap
     *(uint8_t*) heapstart = initial_size;
     *((uint8_t*) heapstart + 1) = min_size;
 }
 
+/*
+ * Emulates malloc on the virtual heap. Follows the buddy allocation algorithm.
+ */
 void* virtual_malloc(void* heapstart, uint32_t size) {
 #ifdef DEBUG
     printf("ALLOC %d\n", size);
@@ -39,18 +47,33 @@ void* virtual_malloc(void* heapstart, uint32_t size) {
     if (size > 1 << heap_size)
         return NULL;
 
+    // block sizes have to be a power of 2 so take a log, however it also needs
+    // to be at least min_size
     uint8_t needed_size = MAX(min_size, log_2(size));
 
+    // keep track of pointer in heap for the block to allocate
     uint8_t* ptr = (uint8_t*) heapstart + 2;
+    // find the leftmost block of the smallest size in the heap
     block_t* block = smallest_block(heapstart, needed_size, &ptr);
     if (block == NULL)
+        // no valid unallocated block was found
         return NULL;
 
+    // if the smallest valid block size is larger than what we need, we will
+    // need to split blocks in half until we reach that size. this requires us
+    // to expand the virtual heap to fit the information for the extra blocks
     uint8_t diff = block->size - needed_size;
-    virtual_sbrk(diff);
+    if (virtual_sbrk(diff) == (void*) -1)
+        return NULL;
 
-    shift(block + 1, virtual_sbrk(0), diff);
+    uint8_t* prog_break = (uint8_t*) virtual_sbrk(0);
+    if (prog_break == (uint8_t*) -1)
+        return NULL;
 
+    // if we need to split, move everything over to fit the extra blocks
+    shift(block + 1, prog_break, diff);
+
+    // split blocks and create extra unallocated blocks if needed
     for (uint8_t i = diff; i > 0; i--) {
         block->size--;
         *(block + i) = (block_t) {false, block->size};
@@ -66,17 +89,19 @@ int virtual_free(void* heapstart, void* ptr) {
     printf("FREE %lu\n", (size_t)((uint8_t*) ptr - (uint8_t*) heapstart) - 2);
 #endif
 
+    // find the information about the block reference by ptr
     block_t* block = get_block_info(heapstart, ptr);
     if (block == NULL)
+        // couldn't find the block, return error
         return 1;
 
     if (!block->allocated)
+        // can't free this block, it's already unallocated
         return 1;
 
+    // free the block and merge if needed according to the buddy algorithm
     block->allocated = false;
-    block = merge_blocks(heapstart, block, ptr);
-
-    return 0;
+    return merge_blocks(heapstart, block, ptr);
 }
 
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
@@ -93,6 +118,9 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
+    if (prog_break == (uint8_t*) -1)
+        return NULL;
+
     size_t heap_size = 1 << *(uint8_t*) heapstart;
     uint8_t* heap = (uint8_t*) heapstart + 2;
 
@@ -102,11 +130,15 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     block_t* block = get_block_info(heapstart, ptr);
     uint32_t og_size = 1 << block->size;
 
-    virtual_sbrk(og_size + heap_size);
+    if (virtual_sbrk(og_size + heap_size) == (void*) -1)
+        return NULL;
+
     memmove(prog_break, ptr, og_size);
     memmove(prog_break + og_size, heap, heap_size);
 
-    virtual_free(heapstart, ptr);
+    if (virtual_free(heapstart, ptr))
+        return NULL;
+
     void* new_block = virtual_malloc(heapstart, size);
 
     uint8_t* new_prog_break = virtual_sbrk(0);
@@ -120,7 +152,8 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     memmove(new_block,
             new_prog_break - heap_size - og_size,
             MIN(og_size, size));
-    virtual_sbrk(-heap_size - og_size);
+    if (virtual_sbrk(-heap_size - og_size) == (void*) -1)
+        return NULL;
 
     return new_block;
 }
@@ -131,6 +164,9 @@ void virtual_info(void* heapstart) {
 #endif
 
     uint8_t* prog_break = virtual_sbrk(0);
+    if (prog_break == (uint8_t*) -1)
+        return;
+
     size_t heap_size = 1 << *(uint8_t*) heapstart;
 
     for (block_t* block = (block_t*) heapstart + 2 + heap_size;

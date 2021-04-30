@@ -37,7 +37,7 @@ block_t* smallest_block(void* heapstart, uint8_t min_size, uint8_t** ptr) {
     return smallest_block;
 }
 
-block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
+int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
     uint8_t heap_size = *(uint8_t*) heapstart;
 
@@ -57,11 +57,13 @@ block_t* merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
         }
 
         // shrink heap
-        virtual_sbrk(-1);
+        if (virtual_sbrk(-1) == (void*) -1)
+            return 1;
+
         prog_break -= 1;
     }
 
-    return block;
+    return 0;
 }
 
 bool should_merge_left(block_t* block) {
