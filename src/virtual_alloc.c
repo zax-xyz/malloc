@@ -144,32 +144,34 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     if (size > heap_size)
         return NULL;
     
+    // get information about this block
     block_t* block = get_block_info(heapstart, ptr);
-    uint32_t og_size = 1 << block->size;
-
-    if (virtual_sbrk(og_size + heap_size) == (void*) -1)
+    if (!block->allocated)
         return NULL;
 
-    memmove(prog_break, ptr, og_size);
-    memmove(prog_break + og_size, heap, heap_size);
+    uint32_t og_size = 1 << block->size;
+
+    // expand the virtual heap so that we can copy the blocks for backup
+    if (virtual_sbrk(heap_size) == (void*) -1)
+        return NULL;
+
+    memmove(prog_break, heap, heap_size);
 
     if (virtual_free(heapstart, ptr))
         return NULL;
 
     void* new_block = virtual_malloc(heapstart, size);
 
-    uint8_t* new_prog_break = virtual_sbrk(0);
-
     if (new_block == NULL) {
-        memmove(heap, new_prog_break - heap_size, heap_size);
-        virtual_sbrk(-heap_size - og_size);
+        memmove(heap, prog_break, heap_size);
+        virtual_sbrk(-heap_size);
         return NULL;
     }
 
     memmove(new_block,
-            new_prog_break - heap_size - og_size,
+            prog_break + ((uint8_t*) ptr - heap),
             MIN(og_size, size));
-    if (virtual_sbrk(-heap_size - og_size) == (void*) -1)
+    if (virtual_sbrk(-heap_size) == (void*) -1)
         return NULL;
 
     return new_block;
