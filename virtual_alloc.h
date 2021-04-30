@@ -11,12 +11,10 @@
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
-#define ALLOCATED(BLOCK) ((BLOCK) & 1)
-#define SET_ALLOCATED(BLOCK, ALLOC) (BLOCK) = ((BLOCK) & ~1) | (ALLOC)
-
-#define SIZE(BLOCK) ((BLOCK) >> 1)
-#define INC_SIZE(BLOCK) BLOCK = ((SIZE(BLOCK) + 1) << 1) + ALLOCATED(BLOCK)
-#define DEC_SIZE(BLOCK) BLOCK = ((SIZE(BLOCK) - 1) << 1) + ALLOCATED(BLOCK)
+typedef struct {
+    uint8_t allocated : 1;
+    uint8_t size: 7;
+} block_t;
 
 uint8_t log_2(uint32_t x);
 
