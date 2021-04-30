@@ -1,8 +1,30 @@
 CC=gcc
-CFLAGS=-fsanitize=address -Wall -Werror -std=gnu11 -g -lm
+CFLAGS=-Wall -Werror -std=gnu11 -g -lm
 
-tests: tests.c virtual_alloc.c
-	$(CC) $(CFLAGS) $^ -o $@
+SRCDIR=src
+INCDIR=include
+BUILDDIR=build
 
-debug: tests.c virtual_alloc.c
-	$(CC) $(CFLAGS) -DDEBUG $^ -o $@
+INCLUDES=-I$(INCDIR)
+
+.PHONY: tests debug clean
+
+tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
+	$(CC) $^ -o $@
+
+debug: DEBUG=-DDEBUG
+debug: tests
+
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
+$(BUILDDIR)/tests.o: tests.c | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c -o $@ $<
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c $(INCDIR)/%.h | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c -o $@ $<
+
+clean:
+	rm -f tests
+	rm -f $(BUILDDIR)/*.o
+	rmdir $(BUILDDIR)
