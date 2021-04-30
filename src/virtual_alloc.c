@@ -127,11 +127,13 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 #endif
 
     if (size == 0) {
+        // if size is 0, behave as free
         virtual_free(heapstart, ptr);
         return NULL;
     }
 
     if (ptr == NULL)
+        // if block pointer is NULL, behave as malloc
         return virtual_malloc(heapstart, size);
 
     uint8_t* prog_break = virtual_sbrk(0);
@@ -147,6 +149,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     // get information about this block
     block_t* block = get_block_info(heapstart, ptr);
     if (!block->allocated)
+        // we can't realloc a block that isn't allocated
         return NULL;
 
     uint32_t og_size = 1 << block->size;
@@ -155,30 +158,46 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     if (virtual_sbrk(heap_size) == (void*) -1)
         return NULL;
 
+    // backup the existing heap
     memmove(prog_break, heap, heap_size);
 
+    // free the block to be reallocated
     if (virtual_free(heapstart, ptr))
         return NULL;
 
+    // reallocate the block
     void* new_block = virtual_malloc(heapstart, size);
 
+    // since free/malloc can change the size of the heap, we should recompute
+    // where the backup of the heap is stored. it is always at the end, we just
+    // need the start of it
     uint8_t* backup_heap = (uint8_t*) virtual_sbrk(0) - heap_size;
 
+    // if reallocating failed, then copy the backup of the heap back to keep
+    // everything the way it was before
     if (new_block == NULL) {
         memmove(heap, backup_heap, heap_size);
         virtual_sbrk(-heap_size);
         return NULL;
     }
 
+    // otherwise if reallocation succeeded, copy the data into the new block
     memmove(new_block,
             backup_heap + ((uint8_t*) ptr - heap),
             MIN(og_size, size));
+
+    // finally, reshrink the heap, getting rid of the backup
     if (virtual_sbrk(-heap_size) == (void*) -1)
         return NULL;
 
     return new_block;
 }
 
+/*
+ * Prints information about each block in the heap, from left (smallest address)
+ * to right. For each block, displays whether it is allocated or free, and its
+ * size. The size is given as an exponent of 2. I.e., 2^size == "actual" size
+ */
 void virtual_info(void* heapstart) {
 #ifdef DEBUG
     printf("INFO\n");

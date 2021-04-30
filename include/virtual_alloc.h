@@ -2,7 +2,6 @@
 #define VIRTUAL_ALLOC_H
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +10,8 @@
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
+// A struct to hold information about a block using bitfields. Should be a
+// single byte.
 typedef struct {
     bool allocated : 1;
     uint8_t size: 7;
@@ -35,10 +36,29 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size);
  */
 void* virtual_malloc(void* heapstart, uint32_t size);
 
+/*
+ * Emulates free on the virtual heap according to the buddy algorithm.
+ * Unallocates a block pointed to by ptr and merges it with its buddy if the
+ * buddy is also unallocated. Repeats the process until no longer possible.
+ * Returns 0 if successful, 1 if not.
+ */
 int virtual_free(void* heapstart, void* ptr);
 
+/*
+ * Emulates realloc on the virtual heap using the buddy allocation algorithm.
+ * Attempts to resize a block to a specified size, moving it if necessary.
+ * If the specified size is lower than the original size, truncates the data.
+ * If the block is unable to be reallocated, the heap is left unchanged and NULL
+ * is returned. Otherwise, a pointer to the new block is returned. If ptr is
+ * NULL, 
+ */
 void* virtual_realloc(void* heapstart, void* ptr, uint32_t size);
 
+/*
+ * Prints information about each block in the heap, from left (smallest address)
+ * to right. For each block, displays whether it is allocated or free, and its
+ * size. The size is given as an exponent of 2. I.e., 2^size == "actual" size
+ */
 void virtual_info(void* heapstart);
 
 #endif
