@@ -1,5 +1,10 @@
 #include "virtual_alloc.h"
 
+/*
+ * Initialises the virtual heap with size 2^initial_size bytes, with minimum
+ * block size 2^min_size. Resets the heap to an empty size before allocating
+ * enough space for the heap and for information about the heap.
+ */
 void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
 #ifdef DEBUG
     printf("INIT %d %d\n", initial_size, min_size);
@@ -8,11 +13,13 @@ void init_allocator(void* heapstart, uint8_t initial_size, uint8_t min_size) {
     // we store the first block (full heap size) and 2 bytes for heap size and
     // minimum block size
     virtual_sbrk(heapstart - virtual_sbrk(0));  // reset heap
+    // allocate space for heap, as well as 1 byte for first block information,
+    // and storing initial_size and min_size
     virtual_sbrk((1 << initial_size) + 1 + 2);
 
-    uint8_t* prog_break = (uint8_t*) heapstart + (1 << initial_size);
+    block_t* prog_break = (block_t*) virtual_sbrk(0);
 
-    *(prog_break + 2) = initial_size << 1;
+    prog_break[-1] = (block_t) {false, initial_size};
 
     *(uint8_t*) heapstart = initial_size;
     *((uint8_t*) heapstart + 1) = min_size;
