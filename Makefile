@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-Wall -Werror -std=gnu11 -g -lm
+CFLAGS=-fsanitize=address -Wall -Werror -std=gnu11 -g -lm
+LDFLAGS=-lasan
 
 SRCDIR=src
 INCDIR=include
@@ -13,7 +14,7 @@ debug: DEBUG=-DDEBUG
 debug: tests
 
 tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
-	$(CC) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
