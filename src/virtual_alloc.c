@@ -141,7 +141,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
 
     if (size > heap_size)
         return NULL;
-    
+
     // get information about this block
     block_t* block = get_block_info(heapstart, ptr);
     if (block == NULL || !block->allocated)
