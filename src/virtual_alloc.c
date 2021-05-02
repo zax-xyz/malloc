@@ -143,7 +143,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     if (block == NULL || !block->allocated)
         return NULL;
 
-    size_t og_size = 1 << block->size;
+    uint32_t og_size = 1 << block->size;
 
     uint8_t* prog_break = (uint8_t*) virtual_sbrk(0);
     if (prog_break == (uint8_t*) -1)
@@ -153,12 +153,11 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     size_t info_size = prog_break - info_start;
 
     // expand the virtual heap so that we can copy the blocks for backup
-    if (virtual_sbrk(info_size + og_size) == (void*) -1)
+    if (virtual_sbrk(info_size) == (void*) -1)
         return NULL;
 
     // backup the existing heap
     memmove(prog_break, info_start, info_size);
-    memmove(prog_break + info_size, ptr, og_size);
 
     // free the block to be reallocated
     if (virtual_free(heapstart, ptr))
@@ -170,23 +169,21 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     // since free/malloc can change the size of the heap, we should recompute
     // where the backup of the heap is stored. it is always at the end, we just
     // need the start of it
-    uint8_t* backup_heap = (uint8_t*) virtual_sbrk(0) - info_size - og_size;
+    uint8_t* backup_heap = (uint8_t*) virtual_sbrk(0) - info_size;
 
     // if reallocating failed, then copy the backup of the heap back to keep
     // everything the way it was before
     if (new_block == NULL) {
         memmove(info_start, backup_heap, info_size);
-        virtual_sbrk(-info_size - og_size);
+        virtual_sbrk(-info_size);
         return NULL;
     }
 
     // otherwise if reallocation succeeded, copy the data into the new block
-    memmove(new_block,
-            backup_heap + info_size,
-            MIN(og_size, size));
+    memmove(new_block, ptr, MIN(og_size, size));
 
     // finally, reshrink the heap, getting rid of the backup
-    if (virtual_sbrk(-heap_size - og_size) == (void*) -1)
+    if (virtual_sbrk(-info_size) == (void*) -1)
         return NULL;
 
     return new_block;
