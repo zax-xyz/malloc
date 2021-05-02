@@ -36,12 +36,6 @@ bool should_merge_left(block_t* block, uint8_t heap_size);
 bool should_merge_right(block_t* block, uint8_t heap_size);
 
 /**
- * Tests whether a block is a left or right child in a binary tree
- * representation of the heap using binary search and returns the result.
- */
-bool is_right(uint8_t size, uint8_t* heapstart, uint8_t* block_ptr);
-
-/**
  * Moves everything in the heap from a starting position by an offset in bytes.
  */
 void shift(block_t* block, uint8_t* prog_break, int16_t offset);

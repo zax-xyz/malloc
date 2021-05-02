@@ -64,13 +64,14 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
         return 1;
 
     uint8_t heap_size = *(uint8_t*) heapstart;
+    uint8_t* heap = (uint8_t*) heapstart + 2;
 
     while (1) {
         // blocks only have buddies on one side, depending on if they're a
         // left child or a right child in a binary tree representation
-        bool right = is_right(block->size, (uint8_t*) heapstart, block_ptr);
+        uint8_t* buddy = heap + ((block_ptr - heap) ^ (1 << block->size));
 
-        if (right && should_merge_left(block, heap_size)) {
+        if (buddy < block_ptr && should_merge_left(block, heap_size)) {
             block[-1].size++;
             shift(block + 1, prog_break, -1);
 
@@ -78,7 +79,7 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
             // we have to update our pointers
             block--;
             block_ptr -= 1 << (block->size - 1);
-        } else if (!right && should_merge_right(block, heap_size)) {
+        } else if (buddy > block_ptr && should_merge_right(block, heap_size)) {
             block[1].size++;
             shift(block + 1, prog_break, -1);
         } else {
@@ -101,8 +102,7 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
  */
 bool should_merge_left(block_t* block, uint8_t heap_size) {
     block_t* left = block - 1;
-    return block->size != heap_size && !left->allocated
-           && block->size == left->size;
+    return !left->allocated && block->size == left->size;
 }
 
 /**
@@ -111,42 +111,7 @@ bool should_merge_left(block_t* block, uint8_t heap_size) {
  */
 bool should_merge_right(block_t* block, uint8_t heap_size) {
     block_t* right = block + 1;
-    return block->size != heap_size && !right->allocated
-           && block->size == right->size;
-}
-
-/**
- * Tests whether a block is a left or right child in a binary tree
- * representation of the heap using binary search and returns the result.
- */
-bool is_right(uint8_t size, uint8_t* heapstart, uint8_t* block_ptr) {
-    uint8_t heap_size = *heapstart;
-
-    uint8_t* start = heapstart + 2;
-    uint8_t* end = start + (1 << heap_size);
-
-    uint8_t* mid;
-
-    while (1) {
-        if (block_ptr + (1 << size) == end)
-            // if the block is at the end of the range, it must be a right child
-            return true;
-
-        if (block_ptr == start)
-            // if the block is at the beginning of the range, it must be a left
-            // child
-            return false;
-
-        mid = start + (end - start) / 2;
-
-        if (block_ptr >= mid) {
-            // the block is in the upper half of the range
-            start = mid;
-        } else {
-            // the block is in the lower half of the range
-            end = mid;
-        }
-    }
+    return !right->allocated && block->size == right->size;
 }
 
 /**
