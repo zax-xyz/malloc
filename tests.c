@@ -81,9 +81,6 @@ static void assert_stdout_equal(const char** expected, unsigned int lines) {
     dup2(pipefd[1], fileno(stdout));
 }
 
-/**
- * Test we can successfully initailise the heap
- */
 static void test_init() {
     const char* expected[] = {
         "free 32768",
@@ -95,9 +92,6 @@ static void test_init() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test we can malloc properly when heap_size is 0 (2^0 = 1)
- */
 static void test_init_zero_malloc() {
     const char* expected[] = {
         "free 1",
@@ -133,9 +127,6 @@ static void test_init_zero_malloc() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test allocating half the heap to make sure it splits
- */
 static void test_malloc_half() {
     const char* expected[] = {
         "allocated 16384",
@@ -149,9 +140,6 @@ static void test_malloc_half() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test malloc splitting several times to get a smaller block
- */
 static void test_malloc_split() {
     const char* expected[] = {
         "allocated 4096",
@@ -167,9 +155,6 @@ static void test_malloc_split() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test allocating the whole heap
- */
 static void test_malloc_full() {
     const char* expected[] = {
         "allocated 32768",
@@ -182,9 +167,6 @@ static void test_malloc_full() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test allocating a lot of blocks across the heap with gaps
- */
 static void test_malloc_many() {
     const char* expected[] = {
         "allocated 1024",
@@ -237,9 +219,6 @@ static void test_malloc_many() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test allocating blocks of 1 byte
- */
 static void test_malloc_tiny() {
     const char* expected[] = {
         "allocated 1",
@@ -262,9 +241,6 @@ static void test_malloc_tiny() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test we handle error case of trying to allocate too large
- */
 static void test_malloc_too_large() {
     const char* expected[] = {
         "free 32",
@@ -283,9 +259,6 @@ static void test_malloc_too_large() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test we handle error case of malloc size 0
- */
 static void test_malloc_zero() {
     const char* expected[] = {
         "free 32",
@@ -299,9 +272,6 @@ static void test_malloc_zero() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test the min_size works by allocating less than that minimum
- */
 static void test_malloc_lt_min() {
     const char* expected[] = {
         "allocated 4096",
@@ -317,9 +287,6 @@ static void test_malloc_lt_min() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test error case is handled properly when allocating larger than heap
- */
 static void test_malloc_min_gt_heap() {
     const char* expected[] = {
         "free 4096",
@@ -338,9 +305,6 @@ static void test_malloc_min_gt_heap() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test freeing a block that takes the whole heap
- */
 static void test_free_full() {
     const char* expected[] = {
         "allocated 32768",
@@ -361,9 +325,6 @@ static void test_free_full() {
     assert_stdout_equal(expected2, ARR_SIZE(expected2));
 }
 
-/**
- * Test we merge blocks properly on free
- */
 static void test_free_merge() {
     init_allocator(virtual_heap, 8, 2);
 
@@ -386,9 +347,6 @@ static void test_free_merge() {
     assert_stdout_equal(expected2, ARR_SIZE(expected2));
 }
 
-/**
- * Test error case free outside heap range
- */
 static void test_free_outside() {
     init_allocator(virtual_heap, 8, 2);
 
@@ -414,9 +372,6 @@ static void test_free_outside() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test error case free unallocated block
- */
 static void test_free_unallocated() {
     init_allocator(virtual_heap, 15, 12);
 
@@ -455,9 +410,6 @@ static void test_free_unallocated() {
     assert_stdout_equal(expected2, ARR_SIZE(expected2));
 }
 
-/**
- * Test freeing blocks of 1 byte
- */
 static void test_free_tiny() {
     const char* expected[] = {
         "free 16"
@@ -482,9 +434,6 @@ static void test_free_tiny() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test error case free address between 2 block
- */
 static void test_free_between() {
     const char* expected[] = {
         "allocated 128",
@@ -504,10 +453,6 @@ static void test_free_between() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test freeing many blocks of different sizes scattered in the heap (same
- * allocations as test_malloc_many)
- */
 static void test_free_many() {
     const char* expected[] = {
         "free 32768",
@@ -537,9 +482,6 @@ static void test_free_many() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test reallocating to whole heap
- */
 static void test_realloc_to_full() {
     const char* expected[] = {
         "allocated 256",
@@ -562,9 +504,6 @@ static void test_realloc_to_full() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test reallocing to smaller size, truncating
- */
 static void test_realloc_to_smaller() {
     const char* expected[] = {
         "allocated 64",
@@ -588,9 +527,6 @@ static void test_realloc_to_smaller() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test reallocing to the same size
- */
 static void test_realloc_same() {
     const char* expected[] = {
         "allocated 128",
@@ -608,16 +544,12 @@ static void test_realloc_same() {
     memcpy(old_block, block, 1 << 7);
 
     void* new_block = virtual_realloc(virtual_heap, block, 1 << 7);
-    assert_ptr_equal(new_block, block);
     assert_memory_equal(new_block, old_block, 1 << 7);
 
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test realloc moving block
- */
 static void test_realloc_move() {
     const char* expected[] = {
         "allocated 128",
@@ -643,9 +575,6 @@ static void test_realloc_move() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test realloc move block to smaller size
- */
 static void test_realloc_move_smaller() {
     const char* expected[] = {
         "allocated 32",
@@ -687,9 +616,6 @@ static void test_realloc_move_smaller() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test realloc error
- */
 static void test_realloc_none() {
     const char* expected[] = {
         "allocated 128",
@@ -716,9 +642,6 @@ static void test_realloc_none() {
     assert_stdout_equal(expected2, ARR_SIZE(expected2));
 }
 
-/**
- * Test realloc with null arguments
- */
 static void test_realloc_null() {
     init_allocator(virtual_heap, 8, 2);
 
@@ -750,9 +673,6 @@ static void test_realloc_null() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
-/**
- * Test we handle sbrk errors
- */
 static void test_sbrk_fail() {
     const char* expected[] = {
         "free 256",
