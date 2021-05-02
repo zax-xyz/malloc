@@ -133,7 +133,6 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
         return virtual_malloc(heapstart, size);
 
     size_t heap_size = 1 << *(uint8_t*) heapstart;
-    uint8_t* heap = (uint8_t*) heapstart + 2;
 
     if (size > heap_size)
         return NULL;
@@ -143,20 +142,20 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     if (block == NULL || !block->allocated)
         return NULL;
 
-    uint32_t og_size = 1 << block->size;
+    uint8_t og_size = block->size;
 
     uint8_t* prog_break = (uint8_t*) virtual_sbrk(0);
     if (prog_break == (uint8_t*) -1)
         return NULL;
 
-    uint8_t* info_start = heap + heap_size;
+    uint8_t* info_start = (uint8_t*) heapstart + 2 + heap_size;
     size_t info_size = prog_break - info_start;
 
-    // expand the virtual heap so that we can copy the blocks for backup
+    // expand the virtual heap so that we can copy heap info for backup
     if (virtual_sbrk(info_size) == (void*) -1)
         return NULL;
 
-    // backup the existing heap
+    // backup the existing heap info
     memmove(prog_break, info_start, info_size);
 
     // free the block to be reallocated
@@ -166,17 +165,15 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     // reallocate the block
     void* new_block = virtual_malloc(heapstart, size);
 
-    // since free/malloc can change the size of the heap, we should recompute
-    // where the backup of the heap is stored. it is always at the end, we just
-    // need the start of it
     uint8_t* new_prog_break = (uint8_t*) virtual_sbrk(0);
     if (new_prog_break == (uint8_t*) -1)
         return NULL;
 
+    // since free/malloc can change the size of the heap, we should recompute
+    // where the backup is stored
     uint8_t* backup_heap = new_prog_break - info_size;
 
-    // if reallocating failed, then copy the backup of the heap back to keep
-    // everything the way it was before
+    // if reallocating failed, then restore the backup
     if (new_block == NULL) {
         memmove(info_start, backup_heap, info_size);
         virtual_sbrk(prog_break - new_prog_break);
@@ -184,7 +181,7 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     }
 
     // otherwise if reallocation succeeded, copy the data into the new block
-    memmove(new_block, ptr, MIN(og_size, size));
+    memmove(new_block, ptr, MIN(1 << og_size, size));
 
     // finally, reshrink the heap, getting rid of the backup
     if (virtual_sbrk(-info_size) == (void*) -1)
