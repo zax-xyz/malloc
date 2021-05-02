@@ -67,8 +67,7 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* heap = (uint8_t*) heapstart + 2;
 
     while (1) {
-        // blocks only have buddies on one side, depending on if they're a
-        // left child or a right child in a binary tree representation
+        // the buddy of a block can be found with an XOR of its address and size
         uint8_t* buddy = heap + ((block_ptr - heap) ^ (1 << block->size));
 
         if (buddy < block_ptr && should_merge_left(block, heap_size)) {
