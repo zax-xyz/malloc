@@ -106,7 +106,12 @@ int virtual_free(void* heapstart, void* ptr) {
 
     // free the block and merge if needed according to the buddy algorithm
     block->allocated = false;
-    return merge_blocks(heapstart, block, ptr);
+    int ret = merge_blocks(heapstart, block, ptr);
+    if (ret)
+        // reset if non-zero (error)
+        block->allocated = true;
+
+    return ret;
 }
 
 /**
@@ -200,16 +205,11 @@ void virtual_info(void* heapstart) {
     printf("INFO\n");
 #endif
 
-    block_t* prog_break = (block_t*) virtual_sbrk(0);
-    if (prog_break == (block_t*) -1)
-        return;
-
     size_t heap_size = 1 << *(uint8_t*) heapstart;
-    block_t* info_start = (block_t*) heapstart + 2 + heap_size;
+    block_t* block = (block_t*) heapstart + 2 + heap_size;
 
-    for (block_t* block = info_start; block < prog_break; block++) {
-        printf("%s %d\n",
-                block->allocated ? "allocated" : "free",
-                1 << block->size);
+    for (size_t pos = 0; pos < heap_size; pos += 1 << block->size, block++) {
+        printf(block->allocated ? "allocated" : "free");
+        printf(" %d\n", 1 << block->size);
     }
 }

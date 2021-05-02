@@ -11,11 +11,9 @@ INCLUDES=-I$(INCDIR)
 TESTINCLUDES=-I$(LIBDIR)
 TESTLDFLAGS=-Llib -lcmocka-static
 
-DEPS=$(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
+.PHONY: tests debug run_tests clean
 
-.PHONY: tests debug clean
-
-tests: $(BUILDDIR)/tests.o $(DEPS)
+tests: $(BUILDDIR)/tests.o $(BUILDDIR)/virtual_alloc.o $(BUILDDIR)/helpers.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(TESTLDFLAGS)
 
 debug: DEBUG=-DDEBUG

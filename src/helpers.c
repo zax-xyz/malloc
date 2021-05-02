@@ -60,6 +60,9 @@ block_t* smallest_block(void* heapstart, uint8_t min_size, uint8_t** ptr) {
  */
 int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* prog_break = virtual_sbrk(0);
+    if (prog_break == (uint8_t*) -1)
+        return 1;
+
     uint8_t heap_size = *(uint8_t*) heapstart;
 
     while (1) {

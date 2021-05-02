@@ -15,17 +15,21 @@ void* virtual_heap = NULL;
 // pipe for testing stdout
 int pipefd[2];
 int oldstdout;
-FILE* fp;
+FILE* stdout_fp;
+
+bool sbrk_should_fail = false;
 
 void* virtual_sbrk(int32_t increment) {
-    // Your implementation here (for your testing only)
+    if (sbrk_should_fail)
+        return (void*) -1;
+
     return sbrk(increment);
 }
 
 static void close_fp() {
-    if (fp) {
-        fclose(fp);
-        fp = NULL;
+    if (stdout_fp) {
+        fclose(stdout_fp);
+        stdout_fp = NULL;
     }
 }
 
@@ -56,11 +60,11 @@ static void assert_stdout_equal(const char** expected, unsigned int lines) {
     close(pipefd[1]);
     dup2(oldstdout, fileno(stdout));
 
-    fp = fdopen(pipefd[0], "r");
+    stdout_fp = fdopen(pipefd[0], "r");
 
     for (int i = 0; i < lines; i++) {
         // read line from stdout and ensure no error or EOF
-        assert_non_null(fgets(line, LINE_LENGTH, fp));
+        assert_non_null(fgets(line, LINE_LENGTH, stdout_fp));
 
         // removing trailing newline
         line[strcspn(line, "\n")] = 0;
@@ -68,7 +72,7 @@ static void assert_stdout_equal(const char** expected, unsigned int lines) {
     }
 
     // ensure this is the end of stdout
-    assert_int_equal(getc(fp), EOF);
+    assert_int_equal(getc(stdout_fp), EOF);
 
     close_fp();
 
@@ -646,6 +650,40 @@ static void test_realloc_null() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
+static void test_sbrk_fail() {
+    const char* expected[] = {
+        "free 256",
+    };
+
+    init_allocator(virtual_heap, 8, 2);
+
+    sbrk_should_fail = true;
+    assert_null(virtual_malloc(virtual_heap, 1 << 5));
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, ARR_SIZE(expected));
+
+    const char* expected2[] = {
+        "allocated 32",
+        "free 32",
+        "free 64",
+        "free 128",
+    };
+
+    sbrk_should_fail = false;
+    void* block = virtual_malloc(virtual_heap, 1 << 5);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, ARR_SIZE(expected2));
+
+    sbrk_should_fail = true;
+    assert_int_not_equal(virtual_free(virtual_heap, block), 0);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, ARR_SIZE(expected2));
+
+    assert_null(virtual_realloc(virtual_heap, block, 1 << 6));
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, ARR_SIZE(expected2));
+}
+
 int main() {
     // Your own testing code here
     virtual_heap = sbrk(0);
@@ -677,6 +715,7 @@ int main() {
         cmocka_unit_test_setup_teardown(test_realloc_move_smaller, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_none, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_null, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_sbrk_fail, setup, teardown),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
