@@ -169,13 +169,17 @@ void* virtual_realloc(void* heapstart, void* ptr, uint32_t size) {
     // since free/malloc can change the size of the heap, we should recompute
     // where the backup of the heap is stored. it is always at the end, we just
     // need the start of it
-    uint8_t* backup_heap = (uint8_t*) virtual_sbrk(0) - info_size;
+    uint8_t* new_prog_break = (uint8_t*) virtual_sbrk(0);
+    if (new_prog_break == (uint8_t*) -1)
+        return NULL;
+
+    uint8_t* backup_heap = new_prog_break - info_size;
 
     // if reallocating failed, then copy the backup of the heap back to keep
     // everything the way it was before
     if (new_block == NULL) {
         memmove(info_start, backup_heap, info_size);
-        virtual_sbrk(-info_size);
+        virtual_sbrk(prog_break - new_prog_break);
         return NULL;
     }
 
