@@ -33,7 +33,7 @@ bool should_merge_left(block_t* block, uint8_t heap_size);
  * Returns whether a block is able to be merged to the right with its buddy, if
  * one exists. Assumes that the block in question is a left child.
  */
-bool should_merge_right(block_t* block, uint8_t heap_size);
+bool should_merge_right(block_t* block);
 
 /**
  * Moves everything in the heap from a starting position by an offset in bytes.

@@ -67,10 +67,11 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
     uint8_t* heap = (uint8_t*) heapstart + 2;
 
     while (1) {
-        // the buddy of a block can be found with an XOR of its address and size
-        uint8_t* buddy = heap + ((block_ptr - heap) ^ (1 << block->size));
+        // we can determine if a block is a right child using the bit that
+        // differentiates it from its buddy
+        bool right = (block_ptr - heap) & (1 << block->size);
 
-        if (buddy < block_ptr && should_merge_left(block, heap_size)) {
+        if (right && should_merge_left(block, heap_size)) {
             block[-1].size++;
             shift(block + 1, prog_break, -1);
 
@@ -78,7 +79,7 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
             // we have to update our pointers
             block--;
             block_ptr -= 1 << (block->size - 1);
-        } else if (buddy > block_ptr && should_merge_right(block, heap_size)) {
+        } else if (!right && should_merge_right(block)) {
             block[1].size++;
             shift(block + 1, prog_break, -1);
         } else {
@@ -101,14 +102,15 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
  */
 bool should_merge_left(block_t* block, uint8_t heap_size) {
     block_t* left = block - 1;
-    return !left->allocated && block->size == left->size;
+    return block->size != heap_size && !left->allocated
+           && block->size == left->size;
 }
 
 /**
  * Returns whether a block is able to be merged to the right with its buddy, if
  * one exists. Assumes that the block in question is a left child.
  */
-bool should_merge_right(block_t* block, uint8_t heap_size) {
+bool should_merge_right(block_t* block) {
     block_t* right = block + 1;
     return !right->allocated && block->size == right->size;
 }
