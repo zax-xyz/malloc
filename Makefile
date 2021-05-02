@@ -35,6 +35,5 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.c $(INCDIR)/%.h | $(BUILDDIR)
 
 clean:
 	rm -f tests
-	rm -f cmocka_tests
 	rm -f $(BUILDDIR)/*.o
 	rmdir $(BUILDDIR)

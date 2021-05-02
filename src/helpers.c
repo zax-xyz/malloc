@@ -67,7 +67,7 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
         // left child or a right child in a binary tree representation
         bool right = is_right(block->size, (uint8_t*) heapstart, block_ptr);
 
-        if (right && should_merge_left(block)) {
+        if (right && should_merge_left(block, heap_size)) {
             block[-1].size++;
             shift(block + 1, prog_break, -1);
 
@@ -93,12 +93,13 @@ int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr) {
 }
 
 /**
- * Returns whether a block is able to be merged to the left with its buddy.
- * Assumes that the block in question is a right child.
+ * Returns whether a block is able to be merged to the left with its buddy, if
+ * one exists. Assumes that the block in question is a right child.
  */
-bool should_merge_left(block_t* block) {
+bool should_merge_left(block_t* block, uint8_t heap_size) {
     block_t* left = block - 1;
-    return !left->allocated && block->size == left->size;
+    return block->size != heap_size && !left->allocated
+           && block->size == left->size;
 }
 
 /**

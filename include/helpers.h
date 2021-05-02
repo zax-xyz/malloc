@@ -24,10 +24,10 @@ block_t* smallest_block(void* heapstart, uint8_t min_size, uint8_t** ptr);
 int merge_blocks(void* heapstart, block_t* block, uint8_t* block_ptr);
 
 /**
- * Returns whether a block is able to be merged to the left with its buddy.
- * Assumes that the block in question is a right child.
+ * Returns whether a block is able to be merged to the left with its buddy, if
+ * one exists. Assumes that the block in question is a right child.
  */
-bool should_merge_left(block_t* block);
+bool should_merge_left(block_t* block, uint8_t heap_size);
 
 /**
  * Returns whether a block is able to be merged to the right with its buddy, if

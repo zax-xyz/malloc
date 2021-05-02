@@ -48,17 +48,19 @@ static void assert_stdout_equal(const char** expected, unsigned int lines) {
     FILE* fp = fdopen(pipefd[0], "r");
 
     for (int i = 0; i < lines; i++) {
-        if (fgets(line, LINE_LENGTH, fp) == NULL) {
-            fail_msg("Reached unexpected EOF in stdout. Expected: %s",
-                    expected[i]);
-        }
+        // read line from stdout and ensure no error or EOF
+        assert_non_null(fgets(line, LINE_LENGTH, fp));
 
         // removing trailing newline
         line[strcspn(line, "\n")] = 0;
         assert_string_equal(line, expected[i]);
     }
 
+    // ensure this is the end of stdout
+    assert_int_equal(getc(fp), EOF);
+
     // recreate stdout pipe for any further testing
+    fclose(fp);
     pipe(pipefd);
     dup2(pipefd[1], fileno(stdout));
 }
@@ -74,9 +76,45 @@ static void test_init() {
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
 }
 
+static void test_init_zero_malloc() {
+    const char* expected[] = {
+        "free 1",
+    };
+
+    init_allocator(virtual_heap, 0, 0);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, STR_ARR_SIZE(expected));
+
+    void* block = virtual_malloc(virtual_heap, 1);
+    assert_non_null(block);
+
+    const char* expected2[] = {
+        "allocated 1",
+    };
+
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, STR_ARR_SIZE(expected2));
+
+    assert_null(virtual_malloc(virtual_heap, 1));
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, STR_ARR_SIZE(expected2));
+
+    assert_null(virtual_malloc(virtual_heap, 2));
+
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected2, STR_ARR_SIZE(expected2));
+
+    int res = virtual_free(virtual_heap, block);
+    assert_int_equal(res, 0);
+
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, STR_ARR_SIZE(expected));
+}
+
 static void test_malloc_half() {
     const char* expected[] = {
         "allocated 16384",
+        "free 16384",
     };
 
     init_allocator(virtual_heap, 15, 12);
@@ -130,16 +168,16 @@ static void test_malloc_many() {
     };
 
     init_allocator(virtual_heap, 15, 5);
-    virtual_malloc(virtual_heap, 1 << 10);
-    virtual_malloc(virtual_heap, 1 << 9);
-    virtual_malloc(virtual_heap, 1 << 9);
-    virtual_malloc(virtual_heap, 1 << 10);
-    virtual_malloc(virtual_heap, 1 << 8);
-    virtual_malloc(virtual_heap, 1 << 7);
-    virtual_malloc(virtual_heap, 1 << 7);
-    virtual_malloc(virtual_heap, 1 << 12);
-    virtual_malloc(virtual_heap, 1 << 14);
-    virtual_malloc(virtual_heap, 1 << 12);
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 10));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 9));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 9));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 10));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 8));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 7));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 7));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 12));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 14));
+    assert_non_null(virtual_malloc(virtual_heap, 1 << 12));
 
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
@@ -158,8 +196,10 @@ static void test_malloc_tiny() {
     };
 
     init_allocator(virtual_heap, 3, 0);
-    for (int i = 0; i < (1 << 3); i++)
-        virtual_malloc(virtual_heap, 1);
+    for (int i = 0; i < (1 << 3); i++) {
+        void* block = virtual_malloc(virtual_heap, 1);
+        assert_non_null(block);
+    }
 
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
@@ -173,12 +213,12 @@ static void test_malloc_too_large() {
     init_allocator(virtual_heap, 5, 0);
 
     void* block = virtual_malloc(virtual_heap, (1 << 5) + 1);
-    assert_ptr_equal(block, NULL);
+    assert_null(block);
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
 
     block = virtual_malloc(virtual_heap, UINT8_MAX);
-    assert_ptr_equal(block, NULL);
+    assert_null(block);
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
 }
@@ -191,7 +231,7 @@ static void test_malloc_zero() {
     init_allocator(virtual_heap, 5, 0);
 
     void* block = virtual_malloc(virtual_heap, 0);
-    assert_ptr_equal(block, NULL);
+    assert_null(block);
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
 }
@@ -240,6 +280,7 @@ static void test_free_merge() {
     };
 
     void* block = virtual_malloc(virtual_heap, 1 << 7);
+    assert_non_null(block);
     virtual_info(virtual_heap);
     assert_stdout_equal(expected, STR_ARR_SIZE(expected));
 
@@ -252,14 +293,40 @@ static void test_free_merge() {
     assert_stdout_equal(expected2, STR_ARR_SIZE(expected2));
 }
 
+static void test_free_outside() {
+    init_allocator(virtual_heap, 8, 2);
+
+    const char* expected[] = {
+        "allocated 256",
+    };
+
+    void* block = virtual_malloc(virtual_heap, 1 << 8);
+    assert_non_null(block);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, STR_ARR_SIZE(expected));
+
+    // this should be right after the allocated block
+    int res = virtual_free(virtual_heap, (void*) ((uint8_t*) block) + (1 << 8));
+    assert_int_equal(res, 1);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, STR_ARR_SIZE(expected));
+
+    // first 2 bytes in our virtual heap should be reserved
+    res = virtual_free(virtual_heap, virtual_heap);
+    assert_int_equal(res, 1);
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, STR_ARR_SIZE(expected));
+}
+
 int main() {
     // Your own testing code here
-    oldstdout = dup(fileno(stdout));
-
     virtual_heap = sbrk(0);
+
+    oldstdout = dup(fileno(stdout));
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(test_init, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_init_zero_malloc, setup, teardown),
         cmocka_unit_test_setup_teardown(test_malloc_half, setup, teardown),
         cmocka_unit_test_setup_teardown(test_malloc_split, setup, teardown),
         cmocka_unit_test_setup_teardown(test_malloc_full, setup, teardown),
@@ -270,9 +337,8 @@ int main() {
         cmocka_unit_test_setup_teardown(test_malloc_lt_min, setup, teardown),
         cmocka_unit_test_setup_teardown(test_free_full, setup, teardown),
         cmocka_unit_test_setup_teardown(test_free_merge, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_free_outside, setup, teardown),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
-
-    return 0;
 }
