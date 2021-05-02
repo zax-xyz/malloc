@@ -527,6 +527,29 @@ static void test_realloc_to_smaller() {
     assert_stdout_equal(expected, ARR_SIZE(expected));
 }
 
+static void test_realloc_same() {
+    const char* expected[] = {
+        "allocated 128",
+        "free 128",
+    };
+
+    init_allocator(virtual_heap, 8, 2);
+    void* block = virtual_malloc(virtual_heap, 1 << 7);
+
+    for (int i = 0; i < 1 << 7; i++) {
+        ((uint8_t*) block)[i] = i;
+    }
+
+    uint8_t old_block[1 << 7];
+    memcpy(old_block, block, 1 << 7);
+
+    void* new_block = virtual_realloc(virtual_heap, block, 1 << 7);
+    assert_memory_equal(new_block, old_block, 1 << 7);
+
+    virtual_info(virtual_heap);
+    assert_stdout_equal(expected, ARR_SIZE(expected));
+}
+
 static void test_realloc_move() {
     const char* expected[] = {
         "allocated 128",
@@ -711,6 +734,7 @@ int main() {
         cmocka_unit_test_setup_teardown(test_free_many, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_to_full, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_to_smaller, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_realloc_same, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_move, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_move_smaller, setup, teardown),
         cmocka_unit_test_setup_teardown(test_realloc_none, setup, teardown),
